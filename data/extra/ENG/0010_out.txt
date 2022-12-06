@@ -1,0 +1,2 @@
+Enter hexadoku:
+Total solutions: 3
