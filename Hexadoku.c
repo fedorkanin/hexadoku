@@ -8,8 +8,6 @@
 #include <string.h>
 
 #define SUDOKU_SIZE 16
-#define MAX_ROW 100
-#define MAX_COLUMN 100
 #define DEBUG 1
 
 size_t LINE_WIDTH = 4 * SUDOKU_SIZE + 1;
@@ -203,6 +201,46 @@ void printHexadoku(uint8_t** hexadoku) {
 }
 
 typedef struct {
+  int* data;
+  size_t size;
+  size_t capacity;
+} IntVector;
+
+IntVector* createIntVector(size_t capacity) {
+  IntVector* vector = (IntVector*)malloc(sizeof(IntVector));
+  vector->data = (int*)malloc(capacity * sizeof(int));
+  vector->size = 0;
+  vector->capacity = capacity;
+  return vector;
+}
+
+void pushToIntVector(IntVector* v, int value) {
+  if (v->size == v->capacity) {
+    v->capacity = v->capacity == 0 ? 1 : 2 * v->capacity;
+    v->data = (int*)realloc(v->data, v->capacity * sizeof(int));
+  }
+  v->data[v->size++] = value;
+}
+
+void popFromIntVector(IntVector* v) {
+  if (v->size > 0) {
+    v->size--;
+  }
+}
+
+void printIntVector(IntVector* v) {
+  for (size_t i = 0; i < v->size; i++) {
+    printf("%d ", v->data[i]);
+  }
+  printf("\n");
+}
+
+void freeIntVector(IntVector* v) {
+  free(v->data);
+  free(v);
+}
+
+typedef struct {
   bool* data;
   size_t size;
   size_t capacity;
@@ -218,7 +256,7 @@ BoolVector* createBoolVector(size_t capacity) {
   return vector;
 }
 
-void PushToBoolVector(BoolVector* v, bool value) {
+void pushToBoolVector(BoolVector* v, bool value) {
   if (v->size == v->capacity) {
     v->capacity = v->capacity == 0 ? 1 : 2 * v->capacity;
     v->data = (bool*)realloc(v->data, v->capacity * sizeof(bool));
@@ -230,7 +268,7 @@ void popFromBoolVector(BoolVector* v) {
   if (v->size > 0) v->size--;
 }
 
-void FreeBoolVector(BoolVector* v) {
+void freeBoolVector(BoolVector* v) {
   free(v->data);
   free(v);
 }
@@ -257,18 +295,6 @@ void pushToBoolVector2D(BoolVector2D* v, BoolVector* value) {
   v->data[v->size++] = value;
 }
 
-void insertToBoolVector2D(BoolVector2D* v, size_t index, BoolVector* value) {
-  if (v->size == v->capacity) {
-    v->capacity = v->capacity == 0 ? 1 : 2 * v->capacity;
-    v->data = (BoolVector**)realloc(v->data, v->capacity * sizeof(BoolVector*));
-  }
-  for (size_t i = v->size; i > index; i--) {
-    v->data[i] = v->data[i - 1];
-  }
-  v->data[index] = value;
-  v->size++;
-}
-
 void printBoolVector2D(BoolVector2D* v) {
   for (size_t i = 0; i < v->size; i++) {
     for (size_t j = 0; j < v->data[i]->size; j++) {
@@ -278,8 +304,21 @@ void printBoolVector2D(BoolVector2D* v) {
   }
 }
 
+BoolVector2D* boolArrayToVector2D(bool array[][4], size_t height,
+                                  size_t width) {
+  BoolVector2D* vector = createBoolVector2D(height);
+  for (size_t i = 0; i < height; i++) {
+    BoolVector* row = createBoolVector(width);
+    for (size_t j = 0; j < width; j++) {
+      pushToBoolVector(row, array[i][j]);
+    }
+    pushToBoolVector2D(vector, row);
+  }
+  return vector;
+}
+
 void freeBoolVector2D(BoolVector2D* v) {
-  for (size_t i = 0; i < v->size; i++) FreeBoolVector(v->data[i]);
+  for (size_t i = 0; i < v->size; i++) freeBoolVector(v->data[i]);
   free(v->data);
   free(v);
 }
@@ -287,14 +326,20 @@ void freeBoolVector2D(BoolVector2D* v) {
 BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
   if (DEBUG) printf("Converting hexadoku to exact cover...\n");
   // possible candidates for each cell
-  size_t rows_number = pow(SUDOKU_SIZE, 3);
+  size_t rows_number = pow(SUDOKU_SIZE, 3) + 1;
   // 4 constraints for each cell
   size_t columns_number = pow(SUDOKU_SIZE, 2) * 4;
   // initialize exact cover matrix
   BoolVector2D* exact_cover = createBoolVector2D(rows_number);
 
-  // push rows
-  for (size_t i = 0; i < rows_number; i++) {
+  // push first row consisting of 1s (required for transformaing to monkey fist)
+  pushToBoolVector2D(exact_cover, createBoolVector(columns_number));
+  exact_cover->data[0]->size = exact_cover->data[0]->capacity;
+  for (size_t i = 0; i < columns_number; i++)
+    exact_cover->data[0]->data[i] = true;
+
+  // Push rows
+  for (size_t i = 1; i < rows_number; i++) {
     pushToBoolVector2D(exact_cover, createBoolVector(columns_number));
     exact_cover->data[i]->size = exact_cover->data[i]->capacity;
   }
@@ -353,10 +398,10 @@ typedef struct node {
   struct node* right;
   struct node* up;
   struct node* down;
-  struct node* column;
+  struct node* column_header;
 
-  int rowID;
-  int columnID;
+  int row_ID;  // if -1, then it's a column header
+  int column_ID;
   int nodeCount;
 } Node;
 
@@ -366,9 +411,9 @@ Node* initNode(int rowID, int columnID) {
   node->right = node;
   node->up = node;
   node->down = node;
-  node->column = NULL;
-  node->rowID = rowID;
-  node->columnID = columnID;
+  node->column_header = NULL;
+  node->row_ID = rowID;
+  node->column_ID = columnID;
   node->nodeCount = 0;
   return node;
 }
@@ -388,7 +433,7 @@ NodeVector* createNodeVector(size_t capacity) {
   return v;
 }
 
-void pushToNodeVector(NodeVector* v, Node* node) {
+void PushToNodeVector(NodeVector* v, Node* node) {
   if (v->size == v->capacity) {
     v->capacity *= 2;
     v->data = (Node**)realloc(v->data, v->capacity * sizeof(Node*));
@@ -408,248 +453,295 @@ void freeNodeVector(NodeVector* v) {
   free(v);
 }
 
-// functions to get circular index in any direction
-int getRight(int index, int size) { return (index + 1) % size; }
-int getLeft(int index, int size) { return (index - 1 + size) % size; }
-int getUp(int index, int size) { return (index - 1 + size) % size; }
-int getDown(int index, int size) { return (index + 1) % size; }
-
-// function to get first non-null neighbor index in a matrix
-// takes in 'R' for right, 'L' for left, 'U' for up, 'D' for down
-int getFirstNeighbor(BoolVector2D* bool_matrix, size_t i, size_t j,
-                     char direction) {
-  // use "case"
-  size_t size = bool_matrix->data[0]->capacity;
-  switch (direction) {
-    case 'R':
-      for (size_t k = getRight(j, size); k != j; k = getRight(k, size)) {
-        if (bool_matrix->data[i]->data[k]) {
-          return k;
-        }
-      }
-      break;
-    case 'L':
-      for (size_t k = getLeft(j, size); k != j; k = getLeft(k, size)) {
-        if (bool_matrix->data[i]->data[k]) {
-          return k;
-        }
-      }
-      break;
-    case 'U':
-      for (size_t k = getUp(i, size); k != i; k = getUp(k, size)) {
-        if (bool_matrix->data[k]->data[j]) {
-          return k;
-        }
-      }
-      break;
-    case 'D':
-      for (size_t k = getDown(i, size); k != i; k = getDown(k, size)) {
-        if (bool_matrix->data[k]->data[j]) {
-          return k;
-        }
-      }
-      break;
-    default:
-      break;
-  }
-  // if no neighbor found, return the same index
-  if (direction == 'R' || direction == 'L') {
-    return j;
+// index may be negative or greater than size
+int getCircularIndex(int index, int size) {
+  if (index < 0) {
+    return size + index;
+  } else if (index >= size) {
+    return index - size;
   } else {
-    return i;
+    return index;
   }
 }
 
-void setNeighbors(BoolVector2D* exact_cover, Node*** node_matrix, int i,
-                  int j) {
-  // set left and right neighbors
-  int left = getFirstNeighbor(exact_cover, i, j, 'L');
-  int right = getFirstNeighbor(exact_cover, i, j, 'R');
-  node_matrix[i][j]->left = node_matrix[i][left];
-  node_matrix[i][j]->right = node_matrix[i][right];
-  // set up and down neighbors
-  int up = getFirstNeighbor(exact_cover, i, j, 'U');
-  int down = getFirstNeighbor(exact_cover, i, j, 'D');
-  node_matrix[i][j]->up = node_matrix[up][j];
-  node_matrix[i][j]->down = node_matrix[down][j];
+// funciton returns horizontal index of the closest left neighbor with value 1
+size_t leftNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
+  size_t left_neighbor_id = column;
+  do {
+    left_neighbor_id =
+        getCircularIndex(left_neighbor_id - 1, exact_cover->data[0]->capacity);
+  } while (exact_cover->data[row]->data[left_neighbor_id] == false);
+  return left_neighbor_id;
+}
+// funciton returns horizontal index of the closest right neighbor with value 1
+size_t rightNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
+  size_t right_neighbor_id = column;
+  do {
+    right_neighbor_id =
+        getCircularIndex(right_neighbor_id + 1, exact_cover->data[0]->capacity);
+  } while (exact_cover->data[row]->data[right_neighbor_id] == false);
+  return right_neighbor_id;
+}
+// funciton returns vertical index of the closest top neighbor with value 1
+size_t topNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
+  size_t top_neighbor_id = row;
+  do {
+    top_neighbor_id =
+        getCircularIndex(top_neighbor_id - 1, exact_cover->capacity);
+  } while (exact_cover->data[top_neighbor_id]->data[column] == false);
+  return top_neighbor_id;
+}
+// funciton returns vertical index of the closest bottom neighbor with value 1
+size_t bottomNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
+  size_t bottom_neighbor_id = row;
+  do {
+    bottom_neighbor_id =
+        getCircularIndex(bottom_neighbor_id + 1, exact_cover->capacity);
+  } while (exact_cover->data[bottom_neighbor_id]->data[column] == false);
+  return bottom_neighbor_id;
 }
 
-void setId(Node* node, int rowID, int columnID) {
-  node->rowID = rowID;
-  node->columnID = columnID;
-}
+// create monkey fist node mesh form exact cover matrix represented by
+// BoolVector2D. Exact cover matrix must have an additiona first row of 1's
+// returns pointer to head node
+Node* createMonkeyFistMesh(BoolVector2D* exact_cover) {
+  // create head node
+  Node* head = initNode(-1, -1);
 
-// create 4 way linked mesh
-// called Monkey Fist Matrix because it resembles a monkey fist knot
-// https://en.wikipedia.org/wiki/Monkey's_fist
-Node* createMonkeyFistMatrix(BoolVector2D* exact_cover, Node*** node_matrix) {
-  // pointer to list header of first column
-  Node* header = initNode(-1, -1);
+  size_t mesh_width = exact_cover->data[0]->capacity;
+  size_t mesh_height = exact_cover->capacity;
 
-  // first number is just ones
-  size_t rows_number = exact_cover->capacity - 1;
-  size_t columns_number = exact_cover->data[0]->capacity;
+  // create temporary 2d matrix of nodes
+  Node*** node_matrix = (Node***)malloc(mesh_height * sizeof(Node**));
+  for (size_t i = 0; i < mesh_height; i++)
+    node_matrix[i] = (Node**)malloc(mesh_width * sizeof(Node*));
+  // initialize node matrix with NULL
+  for (size_t i = 0; i < mesh_height; i++)
+    for (size_t j = 0; j < mesh_width; j++) node_matrix[i][j] = NULL;
 
-  // create matrix dynamically
-  node_matrix = (Node***)malloc(sizeof(Node**) * (rows_number + 1));
-  for (size_t i = 0; i <= rows_number; i++) {
-    node_matrix[i] = (Node**)malloc(sizeof(Node*) * columns_number);
-    for (size_t j = 0; j < columns_number; j++) {
-      node_matrix[i][j] = initNode(i, j);
+  // create column nodes
+  for (size_t i = 0; i < mesh_width; i++) {
+    Node* column_node = initNode(-1, i);
+    // link with left neighbor, link left neighbor with this node
+    column_node->left = i ? node_matrix[0][i - 1] : head;
+    column_node->left->right = column_node;
+    // set column pointer
+    column_node->column_header = column_node;
+    // set node count
+    column_node->nodeCount = 0;
+    // add to node matrix
+    node_matrix[0][i] = column_node;
+  }
+  // link last column node with head node, first one is already linked
+  node_matrix[0][mesh_width - 1]->right = head;
+  head->left = node_matrix[0][mesh_width - 1];
+
+  // create mesh nodes
+  for (size_t row_id = 1; row_id < mesh_height; row_id++) {
+    Node* node;
+    for (size_t column_id = 0; column_id < mesh_width; column_id++) {
+      if (exact_cover->data[row_id]->data[column_id] == false) continue;
+      // create node
+      node = initNode(row_id - 1, column_id);
+      // add to node matrix
+      node_matrix[row_id][column_id] = node;
+      // link node with horizontral neighbors
+      node->left =
+          node_matrix[row_id][leftNeighborId(exact_cover, row_id, column_id)];
+      node->right =
+          node_matrix[row_id][rightNeighborId(exact_cover, row_id, column_id)];
+      // link horizontal neighbors with this node
+      if (node->left) node->left->right = node;
+      if (node->right) node->right->left = node;
+      // link node with vertical neighbors
+      node->up =
+          node_matrix[topNeighborId(exact_cover, row_id, column_id)][column_id];
+      node->down = node_matrix[bottomNeighborId(exact_cover, row_id, column_id)]
+                              [column_id];
+      // link vertical neighbors with this node
+      if (node->up) node->up->down = node;
+      if (node->down) node->down->up = node;
+      // set column pointer
+      node->column_header = node_matrix[0][column_id];
+      // set node count
+      node->nodeCount = 0;
+      // increment node count of column header
+      node->column_header->nodeCount++;
     }
   }
 
-  // one extra row for column headers
-  // cycle through each element of exact cover matrix
-  for (size_t i = 0; i <= rows_number; i++) {
-    for (size_t j = 0; j < columns_number; j++) {
-      // if element is false, skip
-      if (!exact_cover->data[i]->data[j]) {
-        continue;
-      }
-      // element is true, create node
-      // if first row, increase column header nodeCount
-      if (i) node_matrix[0][j]->nodeCount++;
-      // add pointer to column header for this column node
-      // printf("i: %ld, j: %ld\n", i, j);
-      node_matrix[i][j]->column = node_matrix[0][j];
-      // set row and column id's
-      setId(node_matrix[i][j], i, j);
-      // link node to neighbors
-      setNeighbors(exact_cover, node_matrix, i, j);
-    }
-  }
+  // free node matrix
+  for (size_t i = 0; i < mesh_height; i++) free(node_matrix[i]);
+  free(node_matrix);
 
-  // link header right to first column header
-  header->right = node_matrix[0][0];
-  // link header left to last column header
-  header->left = node_matrix[0][columns_number - 1];
-
-  // link matrix first column header left to header
-  node_matrix[0][0]->left = header;
-  // link matrix last column header right to header
-  node_matrix[0][columns_number - 1]->right = header;
-
-  return header;
+  return head;
 }
 
-// cover given node completely
-void coverColumn(Node* target_node) {
-  Node *row_node, *right_node;
-  Node* column_node = target_node->column;
-
-  // unlink column header (thank you, Donald Knuth)
-  column_node->left->right = column_node->right;
-  column_node->right->left = column_node->left;
-
-  // move down the column and remove all nodes in the same row
-  for (row_node = column_node->down; row_node != column_node;
-       row_node = row_node->down) {
-    // move right in the row and unlink all nodes
-    for (right_node = row_node->right; right_node != row_node;
-         right_node = right_node->right) {
-      // thank you, Donald Knuth
-      right_node->up->down = right_node->down;
-      right_node->down->up = right_node->up;
-      // decrement column header count
-      // WARNING, ERROR POSSIBLE HERE
-      right_node->column->nodeCount--;
+// print monkey fist mesh
+void printMonkeyFistMesh(Node* head) {
+  Node* column_header = head->right;
+  Node* node;
+  while (column_header != head) {
+    printf("Column %d:\n", column_header->column_ID);
+    node = column_header->down;
+    while (node != column_header) {
+      printf("Row %d -> ", node->row_ID);
+      printf("Left %d, Right %d, Up %d, Down %d\n", node->left->column_ID,
+             node->right->column_ID, node->up->row_ID, node->down->row_ID);
+      node = node->down;
     }
+    column_header = column_header->right;
   }
 }
 
-// uncover given node completely
-void uncoverColumn(Node* target_node) {
-  Node *row_node, *left_node;
-  Node* column_node = target_node->column;
-
-  // move up the column and reinsert all nodes in the same row
-  for (row_node = column_node->up; row_node != column_node;
-       row_node = row_node->up) {
-    // move left in the row and reinsert all nodes
-    for (left_node = row_node->left; left_node != row_node;
-         left_node = left_node->left) {
-      // thank you, Donald Knuth
-      left_node->up->down = left_node;
-      left_node->down->up = left_node;
-      // increment column header count
-      // WARNING, ERROR POSSIBLE HERE
-      left_node->column->nodeCount++;
+// check if all nodes have non-null pointers
+void validateMonkeyFistMesh(Node* head) {
+  Node* column_header = head->right;
+  Node* node;
+  while (column_header != head) {
+    node = column_header->down;
+    while (node != column_header) {
+      if (node->left == NULL)
+        printf("Node r%d, c%d has NULL left pointer\n", node->row_ID,
+               node->column_ID);
+      if (node->right == NULL)
+        printf("Node r%d, c%d has NULL right pointer\n", node->row_ID,
+               node->column_ID);
+      if (node->up == NULL)
+        printf("Node r%d, c%d has NULL up pointer\n", node->row_ID,
+               node->column_ID);
+      if (node->down == NULL)
+        printf("Node r%d, c%d has NULL down pointer \n", node->row_ID,
+               node->column_ID);
+      if (node->column_header == NULL)
+        printf("Node r%d, c%d has NULL column header pointer \n", node->row_ID,
+               node->column_ID);
+      node = node->down;
     }
+    column_header = column_header->right;
   }
-  // relink column header (thank you, Donald Knuth)
-  column_node->left->right = column_node;
-  column_node->right->left = column_node;
+  printf("Validation complete\n");
 }
 
-// find column with least nodes
-Node* findColumnWithLeastNodes(Node* header) {
-  Node* column = header->right;
-  Node* least_node_column = column;
-  size_t least_node_count = column->nodeCount;
-  // cycle through columns
-  for (column = column->right; column != header; column = column->right) {
-    // if column has less nodes than least_node_column, update
-    if ((size_t)column->nodeCount < least_node_count) {
-      least_node_column = column;
-      least_node_count = column->nodeCount;
+// free monkey fist mesh
+void freeMonkeyFistMesh(Node* head) {
+  Node* column_header = head->right;
+  Node* node;
+  while (column_header != head) {
+    node = column_header->down;
+    while (node != column_header) {
+      Node* next_node = node->down;
+      if (DEBUG)
+        printf("Freeing node r%d, c%d\n", node->row_ID, node->column_ID);
+      free(node);
+      node = next_node;
     }
+    Node* next_column_header = column_header->right;
+    if (DEBUG) printf("Freeing column header c%d\n", column_header->column_ID);
+    free(column_header);
+    column_header = next_column_header;
   }
-  return least_node_column;
+  if (DEBUG) printf("Freeing head\n");
+  free(head);
 }
 
-void printSolutions(Node** solutions, size_t nSolution) {
-  printf("Solutions:\n");
-  for (size_t i = 0; i < nSolution; i++) {
-    printf("Solution %zu:\n", i);
-    for (size_t j = 0; j < MAX_ROW; j++) {
-      if (solutions[i][j].rowID == -1) break;
-      printf("Row: %d, Column: %d\n", solutions[i][j].rowID,
-             solutions[i][j].columnID);
+// cover column
+void cover(Node* column_header) {
+  // unlink column header from horizontal neighbors
+  column_header->left->right = column_header->right;
+  column_header->right->left = column_header->left;
+  // iterate over column
+  for (Node* node = column_header->down; node != column_header;
+       node = node->down) {
+    // iterate over row
+    for (Node* row_node = node->right; row_node != node;
+         row_node = row_node->right) {
+      // unlink row node from vertical neighbors
+      row_node->up->down = row_node->down;
+      row_node->down->up = row_node->up;
+      // decrement node count of column header
+      row_node->column_header->nodeCount--;
     }
   }
 }
 
-// search for exact cover solutions
-void search(size_t k, NodeVector* solution, Node* header) {
+// uncover column
+void uncover(Node* column_header) {
+  // iterate over column
+  for (Node* node = column_header->up; node != column_header; node = node->up) {
+    // iterate over row
+    for (Node* row_node = node->left; row_node != node;
+         row_node = row_node->left) {
+      // link row node with vertical neighbors
+      row_node->up->down = row_node;
+      row_node->down->up = row_node;
+      // increment node count of column header
+      row_node->column_header->nodeCount++;
+    }
+  }
+  // link column header with horizontal neighbors
+  column_header->left->right = column_header;
+  column_header->right->left = column_header;
+}
+
+// get column with minimum node count
+Node* getMinColumn(Node* head) {
+  Node* min_column = head->right;
+  Node* column_header = head->right->right;
+  while (column_header != head) {
+    if (column_header->nodeCount < min_column->nodeCount) {
+      min_column = column_header;
+    }
+    column_header = column_header->right;
+  }
+  return min_column;
+}
+
+// print all solutions of monkey fist mesh
+void searchSolutions(Node* head, IntVector* solution) {
+  if (DEBUG) printf("In searchSolutions\n");
   Node* row_node;
   Node* right_node;
   Node* left_node;
-  Node* column_node;
+  Node* column;
 
-  // if there are no more columns, we have a solution
-  if (header->right == header) {
-    // add solution to solutions
-    printf("Solution %zu:\n", solution->size);
-    printSolutions(solution->data, solution->size);
+  // if there are no more columns, we found a solution
+  if (head->right == head) {
+    // print solution
+    printf("Solution: ");
+    printIntVector(solution);
     return;
   }
 
-  // choose column with least nodes
-  column_node = findColumnWithLeastNodes(header);
-  // cover chosen column
-  coverColumn(column_node);
+  // cover column with minimum node count
+  column = getMinColumn(head);
+  if (DEBUG)
+    printf("Covering column %d, node count %d\n", column->column_ID,
+           column->nodeCount);
+  cover(column);
 
-  for (row_node = column_node->down; row_node != column_node;
-       row_node = row_node->down) {
-    // add row node to solution
-    pushToNodeVector(solution, row_node);
-    // cover all columns in the same row
+  // iterate over column
+  for (row_node = column->down; row_node != column; row_node = row_node->down) {
+    if (DEBUG) printf("Iterating over row %d\n", row_node->row_ID);
+    // add row to solution
+    pushToIntVector(solution, row_node->row_ID);
+
     for (right_node = row_node->right; right_node != row_node;
          right_node = right_node->right)
-      coverColumn(right_node);
+      cover(right_node->column_header);
+
     // search for solutions
-    search(k + 1, solution, header);
-    // remove row node from solution
-    popFromNodeVector(solution);
-    // uncover all columns in the same row
-    column_node = row_node->column;
+    searchSolutions(head, solution);
+
+    // if solution is not possible, backtrack and uncover column
+    popFromIntVector(solution);
+
+    column = row_node->column_header;
     for (left_node = row_node->left; left_node != row_node;
          left_node = left_node->left)
-      uncoverColumn(left_node);
+      uncover(left_node->column_header);
   }
-  // uncover chosen column
-  uncoverColumn(column_node);
+  uncover(column);
 }
 
 int main(void) {
@@ -660,10 +752,35 @@ int main(void) {
   }
   printf("Got hexadoku:\n");
   printHexadoku(hexadoku);
-  BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
+  // BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
+
+  // create matrix to test
+  bool test_matrix[8][4] = {{1, 1, 1, 1}, {1, 0, 1, 0}, {0, 1, 0, 1},
+                            {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
+                            {0, 0, 1, 0}, {0, 0, 0, 1}};
+  BoolVector2D* exact_cover = boolArrayToVector2D(test_matrix, 8, 4);
+  if (DEBUG) printf("Got exact cover:\n");
+  printBoolVector2D(exact_cover);
+
+  // create monkey fist mesh and print it
+  Node* head = createMonkeyFistMesh(exact_cover);
+  validateMonkeyFistMesh(head);
+  printf("Monkey fist mesh:\n");
+  printMonkeyFistMesh(head);
+
+  // search for solutions
+  IntVector* solution = createIntVector(0);
+  searchSolutions(head, solution);
 
   // free memory
-  for (size_t i = 0; i < MAX_ROW; i++) free(hexadoku[i]);
+  // free hexadoku
+  for (size_t i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
   free(hexadoku);
+  // free exact cover bool vector matrix
+  freeBoolVector2D(exact_cover);
+  // free monkey fist mesh
+  freeMonkeyFistMesh(head);
+  // free solution vector
+  freeIntVector(solution);
   return 0;
 }

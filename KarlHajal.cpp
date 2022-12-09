@@ -42,7 +42,7 @@ clock_t timer, timer2;
 // Functions-----------------------------------------------------//
 //===============================================================================================================//
 
-void coverColumn(Node* col) {
+void cover(Node* col) {
   col->left->right = col->right;
   col->right->left = col->left;
   for (Node* node = col->down; node != col; node = node->down) {
@@ -54,7 +54,7 @@ void coverColumn(Node* col) {
   }
 }
 
-void uncoverColumn(Node* col) {
+void uncover(Node* col) {
   for (Node* node = col->up; node != col; node = node->up) {
     for (Node* temp = node->left; temp != node; temp = temp->left) {
       temp->head->size++;
@@ -86,12 +86,12 @@ void search(int k) {
   for (Node* temp = Col->right; temp != HeadNode; temp = temp->right)
     if (temp->size < Col->size) Col = temp;
 
-  coverColumn(Col);
+  cover(Col);
 
   for (Node* temp = Col->down; temp != Col; temp = temp->down) {
     solution[k] = temp;
     for (Node* node = temp->right; node != temp; node = node->right) {
-      coverColumn(node->head);
+      cover(node->head);
     }
 
     search(k + 1);
@@ -100,11 +100,11 @@ void search(int k) {
     solution[k] = NULL;
     Col = temp->head;
     for (Node* node = temp->left; node != temp; node = node->left) {
-      uncoverColumn(node->head);
+      uncover(node->head);
     }
   }
 
-  uncoverColumn(Col);
+  uncover(Col);
 }
 
 //===============================================================================================================//
@@ -256,11 +256,11 @@ void TransformListToCurrentGrid(int Puzzle[][SIZE]) {
               goto ExitLoops;
         }
       ExitLoops:
-        coverColumn(Col);
+        cover(Col);
         orig_values[index] = temp;
         index++;
         for (Node* node = temp->right; node != temp; node = node->right) {
-          coverColumn(node->head);
+          cover(node->head);
         }
       }
 }
