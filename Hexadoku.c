@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define SUDOKU_SIZE 16
+#define BOX_SIZE 4
 #define DEBUG 1
 
 size_t LINE_WIDTH = 4 * SUDOKU_SIZE + 1;
@@ -200,7 +201,7 @@ void printHexadoku(uint8_t** hexadoku) {
   }
 }
 
-typedef struct {
+typedef struct IntVector {
   int* data;
   size_t size;
   size_t capacity;
@@ -240,7 +241,7 @@ void freeIntVector(IntVector* v) {
   free(v);
 }
 
-typedef struct {
+typedef struct BoolVector {
   bool* data;
   size_t size;
   size_t capacity;
@@ -268,12 +269,18 @@ void popFromBoolVector(BoolVector* v) {
   if (v->size > 0) v->size--;
 }
 
+void fillBoolVector(BoolVector* v, bool value) {
+  for (size_t i = 0; i < v->size; i++) {
+    v->data[i] = value;
+  }
+}
+
 void freeBoolVector(BoolVector* v) {
   free(v->data);
   free(v);
 }
 
-typedef struct {
+typedef struct BoolVector2D {
   BoolVector** data;
   size_t size;
   size_t capacity;
@@ -323,6 +330,88 @@ void freeBoolVector2D(BoolVector2D* v) {
   free(v);
 }
 
+size_t indexInExactCoverMatrix(size_t row, size_t column, size_t num) {
+  // + 1 because first row is header
+  return row * SUDOKU_SIZE * SUDOKU_SIZE + column * SUDOKU_SIZE + num + 1;
+}
+
+size_t valueFromExactCoverIndex(size_t index) {
+  return index % SUDOKU_SIZE + 1;
+}
+
+size_t columnFromExactCoverIndex(size_t index) {
+  return (index / SUDOKU_SIZE) % SUDOKU_SIZE;
+}
+
+size_t rowFromExactCoverIndex(size_t index) {
+  return (index / SUDOKU_SIZE / SUDOKU_SIZE);
+}
+
+size_t createCellConstraints(BoolVector2D* exact_cover, size_t header) {
+  for (size_t row = 0; row < SUDOKU_SIZE; row++)
+    for (size_t column = 0; column < SUDOKU_SIZE; column++, header++)
+      for (size_t num = 0; num < SUDOKU_SIZE; num++) {
+        // if (DEBUG)
+        //   printf("header: %ld, row: %ld, column: %ld, num: %ld\n", header,
+        //   row,
+        //          column, num);
+        // printf("Index: %ld\n", indexInExactCoverMatrix(row, column, num));
+        exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+            ->data[header] = true;
+      }
+  return header;
+}
+
+size_t createRowConstraints(BoolVector2D* exact_cover, size_t header) {
+  for (size_t row = 0; row < SUDOKU_SIZE; row++)
+    for (size_t num = 0; num < SUDOKU_SIZE; num++, header++)
+      for (size_t column = 0; column < SUDOKU_SIZE; column++) {
+        // if (DEBUG)
+        //   printf("header: %ld, row: %ld, column: %ld, num: %ld\n", header,
+        //   row,
+        //          column, num);
+        // printf("Index: %ld\n", indexInExactCoverMatrix(row, column, num));
+        exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+            ->data[header] = true;
+      }
+  return header;
+}
+
+size_t createColumnConstraints(BoolVector2D* exact_cover, size_t header) {
+  for (size_t column = 0; column < SUDOKU_SIZE; column++)
+    for (size_t num = 0; num < SUDOKU_SIZE; num++, header++)
+      for (size_t row = 0; row < SUDOKU_SIZE; row++) {
+        // if (DEBUG)
+        //   printf("header: %ld, row: %ld, column: %ld, num: %ld\n", header,
+        //   row,
+        //          column, num);
+        // printf("Index: %ld\n", indexInExactCoverMatrix(row, column, num));
+        exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+            ->data[header] = true;
+      }
+  return header;
+}
+
+size_t createBoxConstraints(BoolVector2D* exact_cover, size_t header) {
+  for (size_t row = 0; row < SUDOKU_SIZE; row += BOX_SIZE)
+    for (size_t column = 0; column < SUDOKU_SIZE; column += BOX_SIZE)
+      for (size_t num = 0; num < SUDOKU_SIZE; num++, header++)
+        for (size_t box_row = 0; box_row < BOX_SIZE; box_row++)
+          for (size_t box_column = 0; box_column < BOX_SIZE; box_column++) {
+            // if (DEBUG)
+            //   printf("header: %ld, row: %ld, column: %ld, num: %ld\n",
+            //   header,
+            //          row, column, num);
+            // printf("Index: %ld\n", indexInExactCoverMatrix(row, column,
+            // num));
+            int index = indexInExactCoverMatrix(row + box_row,
+                                                column + box_column, num);
+            exact_cover->data[index]->data[header] = true;
+          }
+
+  return header;
+}
+
 BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
   if (DEBUG) printf("Converting hexadoku to exact cover...\n");
   // possible candidates for each cell
@@ -332,7 +421,8 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
   // initialize exact cover matrix
   BoolVector2D* exact_cover = createBoolVector2D(rows_number);
 
-  // push first row consisting of 1s (required for transformaing to monkey fist)
+  // push first row consisting of 1s (required for transformaing to monkey
+  // fist)
   pushToBoolVector2D(exact_cover, createBoolVector(columns_number));
   exact_cover->data[0]->size = exact_cover->data[0]->capacity;
   for (size_t i = 0; i < columns_number; i++)
@@ -353,39 +443,59 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
     printf("Matrix width: %ld, height: %ld\n", exact_cover->data[0]->capacity,
            exact_cover->capacity);
 
-  // fill exact cover matrix
-  for (size_t i = 0; i < SUDOKU_SIZE; i++) {
-    for (size_t j = 0; j < SUDOKU_SIZE; j++) {
-      // row constraint satisfied
-      for (size_t k = 0; k < SUDOKU_SIZE; k++) {
-        size_t row = i * SUDOKU_SIZE * SUDOKU_SIZE + j * SUDOKU_SIZE + k;
-        size_t column = i * SUDOKU_SIZE + j;
-        exact_cover->data[row]->data[column] = true;
-      }
-      // column constraint satisfied
-      for (size_t k = 0; k < SUDOKU_SIZE; k++) {
-        size_t row = i * SUDOKU_SIZE * SUDOKU_SIZE + j * SUDOKU_SIZE + k;
-        size_t column = SUDOKU_SIZE * SUDOKU_SIZE + i * SUDOKU_SIZE + k;
-        exact_cover->data[row]->data[column] = true;
-      }
-      // block constraint satisfied
-      for (size_t k = 0; k < SUDOKU_SIZE; k++) {
-        size_t row = i * SUDOKU_SIZE * SUDOKU_SIZE + j * SUDOKU_SIZE + k;
-        size_t column = 2 * SUDOKU_SIZE * SUDOKU_SIZE +
-                        (i / 4 * 4 + j / 4) * SUDOKU_SIZE + k;
-        exact_cover->data[row]->data[column] = true;
-      }
-      // cell constraint satisfied
-      if (hexadoku[i][j] != 0) {
-        size_t row = i * SUDOKU_SIZE * SUDOKU_SIZE + j * SUDOKU_SIZE +
-                     hexadoku[i][j] - 1;
-        size_t column = 3 * SUDOKU_SIZE * SUDOKU_SIZE + i * SUDOKU_SIZE + j;
-        exact_cover->data[row]->data[column] = true;
+  // fill exact cover matrix as if sudoku was empty
+  // use indexInExactCoverMatrix to get index in exact cover matrix
+  // for each cell
+  // https://medium.com/javarevisited/building-a-sudoku-solver-in-java-with-dancing-links-180274b0b6c1
+  size_t header = 0;  // first row is already filled with 1s, so start from 1
+  header = createCellConstraints(exact_cover, header);
+  header = createRowConstraints(exact_cover, header);
+  header = createColumnConstraints(exact_cover, header);
+  createBoxConstraints(exact_cover, header);
+
+  // fill exact cover matrix with given sudoku
+  for (size_t row = 0; row < SUDOKU_SIZE; row++) {
+    for (size_t column = 0; column < SUDOKU_SIZE; column++) {
+      int cur_clue = hexadoku[row][column];
+      if (cur_clue != 0) {
+        for (int num = 0; num < SUDOKU_SIZE; num++) {
+          if (num != cur_clue - 1) {
+            // fill with 0s
+            fillBoolVector(
+                exact_cover->data[indexInExactCoverMatrix(row, column, num)],
+                false);
+          }
+        }
       }
     }
   }
-
   return exact_cover;
+}
+
+// validate exact cover matrix
+void validateExactCover(BoolVector2D* exact_cover) {
+  if (DEBUG) printf("Validating exact cover matrix...\n");
+  // check that first row is filled with 1s
+  for (size_t i = 0; i < exact_cover->data[0]->capacity; i++) {
+    if (!exact_cover->data[0]->data[i]) {
+      printf("First row is not filled with 1s!\n");
+      break;
+    }
+  }
+  // check if each column has at least one 1
+  for (size_t i = 0; i < exact_cover->data[0]->capacity; i++) {
+    bool has_one = false;
+    for (size_t j = 1; j < exact_cover->capacity; j++) {
+      if (exact_cover->data[j]->data[i]) {
+        has_one = true;
+        break;
+      }
+    }
+    if (!has_one) {
+      printf("Column %ld has no 1s!\n", i);
+    }
+  }
+  printf("Exact cover validation complete!\n");
 }
 
 // ==================== EXACT COVER SOLVER ====================
@@ -419,7 +529,7 @@ Node* initNode(int rowID, int columnID) {
 }
 
 // struct node vector
-typedef struct {
+typedef struct NodeVector {
   Node** data;
   size_t size;
   size_t capacity;
@@ -464,7 +574,8 @@ int getCircularIndex(int index, int size) {
   }
 }
 
-// funciton returns horizontal index of the closest left neighbor with value 1
+// funciton returns horizontal index of the closest left neighbor with
+// value 1
 size_t leftNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   size_t left_neighbor_id = column;
   do {
@@ -473,7 +584,9 @@ size_t leftNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   } while (exact_cover->data[row]->data[left_neighbor_id] == false);
   return left_neighbor_id;
 }
-// funciton returns horizontal index of the closest right neighbor with value 1
+// funciton returns horizontal index of the closest right neighbor with
+// value
+// 1
 size_t rightNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   size_t right_neighbor_id = column;
   do {
@@ -482,7 +595,8 @@ size_t rightNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   } while (exact_cover->data[row]->data[right_neighbor_id] == false);
   return right_neighbor_id;
 }
-// funciton returns vertical index of the closest top neighbor with value 1
+// funciton returns vertical index of the closest top neighbor with value
+// 1
 size_t topNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   size_t top_neighbor_id = row;
   do {
@@ -491,7 +605,8 @@ size_t topNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   } while (exact_cover->data[top_neighbor_id]->data[column] == false);
   return top_neighbor_id;
 }
-// funciton returns vertical index of the closest bottom neighbor with value 1
+// funciton returns vertical index of the closest bottom neighbor with
+// value 1
 size_t bottomNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
   size_t bottom_neighbor_id = row;
   do {
@@ -502,22 +617,25 @@ size_t bottomNeighborId(BoolVector2D* exact_cover, size_t row, size_t column) {
 }
 
 // create monkey fist node mesh form exact cover matrix represented by
-// BoolVector2D. Exact cover matrix must have an additiona first row of 1's
-// returns pointer to head node
+// BoolVector2D. Exact cover matrix must have an additiona first row of
+// 1's returns pointer to head node
 Node* createMonkeyFistMesh(BoolVector2D* exact_cover) {
+  if (DEBUG) printf("In function createMonkeyFistMesh()\n");
   // create head node
   Node* head = initNode(-1, -1);
 
   size_t mesh_width = exact_cover->data[0]->capacity;
   size_t mesh_height = exact_cover->capacity;
+  if (DEBUG)
+    printf("Mesh width: %ld, Mesh height: %ld\n", mesh_width, mesh_height);
 
   // create temporary 2d matrix of nodes
   Node*** node_matrix = (Node***)malloc(mesh_height * sizeof(Node**));
-  for (size_t i = 0; i < mesh_height; i++)
+  for (size_t i = 0; i < mesh_height; i++) {
     node_matrix[i] = (Node**)malloc(mesh_width * sizeof(Node*));
-  // initialize node matrix with NULL
-  for (size_t i = 0; i < mesh_height; i++)
+    // initialize all pointers to NULL
     for (size_t j = 0; j < mesh_width; j++) node_matrix[i][j] = NULL;
+  }
 
   // create column nodes
   for (size_t i = 0; i < mesh_width; i++) {
@@ -537,36 +655,43 @@ Node* createMonkeyFistMesh(BoolVector2D* exact_cover) {
   head->left = node_matrix[0][mesh_width - 1];
 
   // create mesh nodes
-  for (size_t row_id = 1; row_id < mesh_height; row_id++) {
+  for (size_t row_index = 1; row_index < mesh_height; row_index++) {
     Node* node;
-    for (size_t column_id = 0; column_id < mesh_width; column_id++) {
-      if (exact_cover->data[row_id]->data[column_id] == false) continue;
+    for (size_t col_index = 0; col_index < mesh_width; col_index++) {
+      if (exact_cover->data[row_index]->data[col_index] == false) continue;
+      // if (DEBUG)
+      //   printf("Creating node at row: %ld, col: %ld\n", row_index,
+      //   col_index);
       // create node
-      node = initNode(row_id - 1, column_id);
+      node = initNode(row_index - 1, col_index);
       // add to node matrix
-      node_matrix[row_id][column_id] = node;
+      node_matrix[row_index][col_index] = node;
       // link node with horizontral neighbors
-      node->left =
-          node_matrix[row_id][leftNeighborId(exact_cover, row_id, column_id)];
-      node->right =
-          node_matrix[row_id][rightNeighborId(exact_cover, row_id, column_id)];
+      node->left = node_matrix[row_index][leftNeighborId(exact_cover, row_index,
+                                                         col_index)];
+      node->right = node_matrix[row_index][rightNeighborId(
+          exact_cover, row_index, col_index)];
       // link horizontal neighbors with this node
       if (node->left) node->left->right = node;
       if (node->right) node->right->left = node;
       // link node with vertical neighbors
-      node->up =
-          node_matrix[topNeighborId(exact_cover, row_id, column_id)][column_id];
-      node->down = node_matrix[bottomNeighborId(exact_cover, row_id, column_id)]
-                              [column_id];
+      node->up = node_matrix[topNeighborId(exact_cover, row_index, col_index)]
+                            [col_index];
+      node->down = node_matrix[bottomNeighborId(exact_cover, row_index,
+                                                col_index)][col_index];
       // link vertical neighbors with this node
       if (node->up) node->up->down = node;
       if (node->down) node->down->up = node;
       // set column pointer
-      node->column_header = node_matrix[0][column_id];
+      node->column_header = node_matrix[0][col_index];
       // set node count
       node->nodeCount = 0;
       // increment node count of column header
       node->column_header->nodeCount++;
+      // if (DEBUG)
+      //   printf("Incrementing node count of column %d to %d\n",
+      //          node->column_header->column_ID,
+      //          node->column_header->nodeCount);
     }
   }
 
@@ -599,6 +724,9 @@ void validateMonkeyFistMesh(Node* head) {
   Node* column_header = head->right;
   Node* node;
   while (column_header != head) {
+    if (column_header->nodeCount == 0) {
+      printf("Column %d has no nodes\n", column_header->column_ID);
+    }
     node = column_header->down;
     while (node != column_header) {
       if (node->left == NULL)
@@ -631,17 +759,18 @@ void freeMonkeyFistMesh(Node* head) {
     node = column_header->down;
     while (node != column_header) {
       Node* next_node = node->down;
-      if (DEBUG)
-        printf("Freeing node r%d, c%d\n", node->row_ID, node->column_ID);
+      // if (DEBUG)
+      // printf("Freeing node r%d, c%d\n", node->row_ID, node->column_ID);
       free(node);
       node = next_node;
     }
     Node* next_column_header = column_header->right;
-    if (DEBUG) printf("Freeing column header c%d\n", column_header->column_ID);
+    // if (DEBUG) printf("Freeing column header c%d\n",
+    // column_header->column_ID);
     free(column_header);
     column_header = next_column_header;
   }
-  if (DEBUG) printf("Freeing head\n");
+  // if (DEBUG) printf("Freeing head\n");
   free(head);
 }
 
@@ -697,9 +826,23 @@ Node* getMinColumn(Node* head) {
   return min_column;
 }
 
+BoolVector2D* exact_cover_global;
+uint8_t** hexadoku_global;
+
+void solutionToHexadoku(BoolVector2D* exact_cover, IntVector* solution,
+                        uint8_t** hexadoku) {
+  // if (DEBUG) printf("In solutionToHexadoku\n");
+  for (size_t i = 0; i < solution->size; i++) {
+    size_t row = rowFromExactCoverIndex(solution->data[i]);
+    size_t column = columnFromExactCoverIndex(solution->data[i]);
+    size_t value = valueFromExactCoverIndex(solution->data[i]);
+    hexadoku[row][column] = value;
+  }
+}
+
 // print all solutions of monkey fist mesh
 void searchSolutions(Node* head, IntVector* solution) {
-  if (DEBUG) printf("In searchSolutions\n");
+  // if (DEBUG) printf("In searchSolutions\n");
   Node* row_node;
   Node* right_node;
   Node* left_node;
@@ -710,19 +853,24 @@ void searchSolutions(Node* head, IntVector* solution) {
     // print solution
     printf("Solution: ");
     printIntVector(solution);
+
+    // convert solution to hexadoku
+    solutionToHexadoku(exact_cover_global, solution, hexadoku_global);
+    printf("Solution:\n");
+    printHexadoku(hexadoku_global);
     return;
   }
 
   // cover column with minimum node count
   column = getMinColumn(head);
-  if (DEBUG)
-    printf("Covering column %d, node count %d\n", column->column_ID,
-           column->nodeCount);
+  // if (DEBUG)
+  // printf("Covering column %d, node count %d\n", column->column_ID,
+  //  column->nodeCount);
   cover(column);
 
   // iterate over column
   for (row_node = column->down; row_node != column; row_node = row_node->down) {
-    if (DEBUG) printf("Iterating over row %d\n", row_node->row_ID);
+    // if (DEBUG) printf("Iterating over row %d\n", row_node->row_ID);
     // add row to solution
     pushToIntVector(solution, row_node->row_ID);
 
@@ -745,29 +893,35 @@ void searchSolutions(Node* head, IntVector* solution) {
 }
 
 int main(void) {
+  // read in hexadoku
   uint8_t** hexadoku = readIn();
   if (hexadoku == NULL) {
     printf("Invalid input.\n");
     return 1;
   }
-  printf("Got hexadoku:\n");
-  printHexadoku(hexadoku);
-  // BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
+  // printf("Got hexadoku:\n");
+  // printHexadoku(hexadoku);
+  BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
+  validateExactCover(exact_cover);
+
+  // printf("Got exact cover:\n");
+  // printBoolVector2D(exact_cover);
 
   // create matrix to test
-  bool test_matrix[8][4] = {{1, 1, 1, 1}, {1, 0, 1, 0}, {0, 1, 0, 1},
-                            {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
-                            {0, 0, 1, 0}, {0, 0, 0, 1}};
-  BoolVector2D* exact_cover = boolArrayToVector2D(test_matrix, 8, 4);
-  if (DEBUG) printf("Got exact cover:\n");
-  printBoolVector2D(exact_cover);
+  // bool test_matrix[8][4] = {{1, 1, 1, 1}, {1, 0, 1, 0}, {0, 1, 0, 1},
+  //                           {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
+  //                           {0, 0, 1, 0}, {0, 0, 0, 1}};
+  // BoolVector2D* exact_cover = boolArrayToVector2D(test_matrix, 8, 4);
 
   // create monkey fist mesh and print it
   Node* head = createMonkeyFistMesh(exact_cover);
   validateMonkeyFistMesh(head);
-  printf("Monkey fist mesh:\n");
-  printMonkeyFistMesh(head);
+  // printf("Monkey fist mesh:\n");
+  // printMonkeyFistMesh(head);
 
+  // update global variables
+  exact_cover_global = exact_cover;
+  hexadoku_global = hexadoku;
   // search for solutions
   IntVector* solution = createIntVector(0);
   searchSolutions(head, solution);
