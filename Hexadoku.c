@@ -9,7 +9,7 @@
 
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
-#define DEBUG 1
+#define DEBUG 0
 
 size_t LINE_WIDTH = 4 * SUDOKU_SIZE + 1;
 size_t LINE_HEIGHT = 2 * SUDOKU_SIZE + 1;
@@ -158,6 +158,54 @@ uint8_t** readIn() {
   free(line);
 
   return hexadoku;
+}
+
+// check if hexadoku is valid
+bool isHexadokuValid(uint8_t** hexadoku) {
+  // check rows
+  for (size_t i = 0; i < 16; i++) {
+    uint8_t row[16] = {0};
+    for (size_t j = 0; j < 16; j++) {
+      if (hexadoku[i][j] != 0) {
+        if (row[hexadoku[i][j] - 1] != 0) {
+          if (DEBUG) printf("Invalid row %zu.\n", i + 1);
+          return false;
+        }
+        row[hexadoku[i][j] - 1] = 1;
+      }
+    }
+  }
+
+  // check columns
+  for (size_t i = 0; i < 16; i++) {
+    uint8_t column[16] = {0};
+    for (size_t j = 0; j < 16; j++) {
+      if (hexadoku[j][i] != 0) {
+        if (column[hexadoku[j][i] - 1] != 0) {
+          if (DEBUG) printf("Invalid column %zu.\n", i + 1);
+          return false;
+        }
+        column[hexadoku[j][i] - 1] = 1;
+      }
+    }
+  }
+
+  // check blocks
+  for (size_t i = 0; i < 16; i++) {
+    uint8_t block[16] = {0};
+    for (size_t j = 0; j < 16; j++) {
+      if (hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] != 0) {
+        if (block[hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] - 1] !=
+            0) {
+          if (DEBUG) printf("Invalid block %zu.\n", i + 1);
+          return false;
+        }
+        block[hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] - 1] = 1;
+      }
+    }
+  }
+
+  return true;
 }
 
 // print 16x16 hexadoku
@@ -446,6 +494,7 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
   // fill exact cover matrix as if sudoku was empty
   // use indexInExactCoverMatrix to get index in exact cover matrix
   // for each cell
+  // inspired by java implementation:
   // https://medium.com/javarevisited/building-a-sudoku-solver-in-java-with-dancing-links-180274b0b6c1
   size_t header = 0;  // first row is already filled with 1s, so start from 1
   header = createCellConstraints(exact_cover, header);
@@ -473,13 +522,13 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
 }
 
 // validate exact cover matrix
-void validateExactCover(BoolVector2D* exact_cover) {
+bool isExactCoverValid(BoolVector2D* exact_cover) {
   if (DEBUG) printf("Validating exact cover matrix...\n");
   // check that first row is filled with 1s
   for (size_t i = 0; i < exact_cover->data[0]->capacity; i++) {
     if (!exact_cover->data[0]->data[i]) {
-      printf("First row is not filled with 1s!\n");
-      break;
+      if (DEBUG) printf("First row is not filled with 1s!\n");
+      return false;
     }
   }
   // check if each column has at least one 1
@@ -492,10 +541,12 @@ void validateExactCover(BoolVector2D* exact_cover) {
       }
     }
     if (!has_one) {
-      printf("Column %ld has no 1s!\n", i);
+      if (DEBUG) printf("Column %ld has no 1s!\n", i);
+      return false;
     }
   }
-  printf("Exact cover validation complete!\n");
+  if (DEBUG) printf("Exact cover validation complete!\n");
+  return true;
 }
 
 // ==================== EXACT COVER SOLVER ====================
@@ -774,6 +825,8 @@ void freeMonkeyFistMesh(Node* head) {
   free(head);
 }
 
+// main solve function and helper functions inspired by
+// https://www.geeksforgeeks.org/implementation-of-exact-cover-problem-and-algorithm-x-using-dlx/
 // cover column
 void cover(Node* column_header) {
   // unlink column header from horizontal neighbors
@@ -828,6 +881,7 @@ Node* getMinColumn(Node* head) {
 
 BoolVector2D* exact_cover_global;
 uint8_t** hexadoku_global;
+size_t solution_count_global = 0;
 
 void solutionToHexadoku(BoolVector2D* exact_cover, IntVector* solution,
                         uint8_t** hexadoku) {
@@ -851,13 +905,12 @@ void searchSolutions(Node* head, IntVector* solution) {
   // if there are no more columns, we found a solution
   if (head->right == head) {
     // print solution
-    printf("Solution: ");
-    printIntVector(solution);
+    if (DEBUG) printf("Solution: ");
+    if (DEBUG) printIntVector(solution);
 
     // convert solution to hexadoku
     solutionToHexadoku(exact_cover_global, solution, hexadoku_global);
-    printf("Solution:\n");
-    printHexadoku(hexadoku_global);
+    solution_count_global++;
     return;
   }
 
@@ -893,48 +946,50 @@ void searchSolutions(Node* head, IntVector* solution) {
 }
 
 int main(void) {
-  // read in hexadoku
+  printf("Zadejte hexadoku:\n");
   uint8_t** hexadoku = readIn();
   if (hexadoku == NULL) {
-    printf("Invalid input.\n");
+    printf("Nespravny vstup.\n");
     return 1;
   }
-  // printf("Got hexadoku:\n");
-  // printHexadoku(hexadoku);
+  if (!isHexadokuValid(hexadoku)) {
+    printf("Nespravny vstup.\n");
+    // free memory
+    for (size_t i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
+    free(hexadoku);
+    return 1;
+  }
+
   BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
-  validateExactCover(exact_cover);
+  if (!isExactCoverValid(exact_cover)) {
+    printf("Nespravny vstup.\n");
+    // free memory
+    for (size_t i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
+    free(hexadoku);
+    freeBoolVector2D(exact_cover);
+    return 1;
+  }
 
-  // printf("Got exact cover:\n");
-  // printBoolVector2D(exact_cover);
-
-  // create matrix to test
-  // bool test_matrix[8][4] = {{1, 1, 1, 1}, {1, 0, 1, 0}, {0, 1, 0, 1},
-  //                           {0, 1, 1, 0}, {1, 0, 0, 0}, {0, 1, 0, 0},
-  //                           {0, 0, 1, 0}, {0, 0, 0, 1}};
-  // BoolVector2D* exact_cover = boolArrayToVector2D(test_matrix, 8, 4);
-
-  // create monkey fist mesh and print it
-  Node* head = createMonkeyFistMesh(exact_cover);
-  validateMonkeyFistMesh(head);
-  // printf("Monkey fist mesh:\n");
-  // printMonkeyFistMesh(head);
-
-  // update global variables
   exact_cover_global = exact_cover;
   hexadoku_global = hexadoku;
-  // search for solutions
+
+  Node* head = createMonkeyFistMesh(exact_cover);
   IntVector* solution = createIntVector(0);
   searchSolutions(head, solution);
 
+  if (solution_count_global == 0) {
+    printf("Reseni neexistuje.\n");
+  } else if (solution_count_global == 1) {
+    printHexadoku(hexadoku);
+  } else {
+    printf("Celkem reseni: %ld\n", solution_count_global);
+  }
+
   // free memory
-  // free hexadoku
   for (size_t i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
   free(hexadoku);
-  // free exact cover bool vector matrix
   freeBoolVector2D(exact_cover);
-  // free monkey fist mesh
   freeMonkeyFistMesh(head);
-  // free solution vector
   freeIntVector(solution);
   return 0;
 }
