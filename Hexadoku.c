@@ -398,11 +398,6 @@ int createCellConstraints(BoolVector2D* exact_cover, int header) {
   for (int row = 0; row < SUDOKU_SIZE; row++)
     for (int column = 0; column < SUDOKU_SIZE; column++, header++)
       for (int num = 0; num < SUDOKU_SIZE; num++) {
-        // if (DEBUG)
-        //   printf("header: %d, row: %d, column: %d, num: %d\n", header,
-        //   row,
-        //          column, num);
-        // printf("Index: %d\n", indexInExactCoverMatrix(row, column, num));
         exact_cover->data[indexInExactCoverMatrix(row, column, num)]
             ->data[header] = true;
       }
@@ -413,11 +408,6 @@ int createRowConstraints(BoolVector2D* exact_cover, int header) {
   for (int row = 0; row < SUDOKU_SIZE; row++)
     for (int num = 0; num < SUDOKU_SIZE; num++, header++)
       for (int column = 0; column < SUDOKU_SIZE; column++) {
-        // if (DEBUG)
-        //   printf("header: %d, row: %d, column: %d, num: %d\n", header,
-        //   row,
-        //          column, num);
-        // printf("Index: %d\n", indexInExactCoverMatrix(row, column, num));
         exact_cover->data[indexInExactCoverMatrix(row, column, num)]
             ->data[header] = true;
       }
@@ -428,11 +418,6 @@ int createColumnConstraints(BoolVector2D* exact_cover, int header) {
   for (int column = 0; column < SUDOKU_SIZE; column++)
     for (int num = 0; num < SUDOKU_SIZE; num++, header++)
       for (int row = 0; row < SUDOKU_SIZE; row++) {
-        // if (DEBUG)
-        //   printf("header: %d, row: %d, column: %d, num: %d\n", header,
-        //   row,
-        //          column, num);
-        // printf("Index: %d\n", indexInExactCoverMatrix(row, column, num));
         exact_cover->data[indexInExactCoverMatrix(row, column, num)]
             ->data[header] = true;
       }
@@ -445,12 +430,6 @@ int createBoxConstraints(BoolVector2D* exact_cover, int header) {
       for (int num = 0; num < SUDOKU_SIZE; num++, header++)
         for (int box_row = 0; box_row < BOX_SIZE; box_row++)
           for (int box_column = 0; box_column < BOX_SIZE; box_column++) {
-            // if (DEBUG)
-            //   printf("header: %d, row: %d, column: %d, num: %d\n",
-            //   header,
-            //          row, column, num);
-            // printf("Index: %d\n", indexInExactCoverMatrix(row, column,
-            // num));
             int index = indexInExactCoverMatrix(row + box_row,
                                                 column + box_column, num);
             exact_cover->data[index]->data[header] = true;
@@ -499,8 +478,16 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
   header = createRowConstraints(exact_cover, header);
   header = createColumnConstraints(exact_cover, header);
   createBoxConstraints(exact_cover, header);
+  // print coordinates of all 1s in exact cover matrix
+  for (int i = 1; i < exact_cover->capacity; i++) {
+    for (int j = 0; j < exact_cover->data[i]->capacity; j++) {
+      if (exact_cover->data[i]->data[j]) {
+        printf("[%d, %d]\n", i, j);
+      }
+    }
+  }
 
-  // fill exact cover matrix with given sudoku
+  // fill exact cover matrix with given sudoku clues
   for (int row = 0; row < SUDOKU_SIZE; row++) {
     for (int column = 0; column < SUDOKU_SIZE; column++) {
       int cur_clue = hexadoku[row][column];
@@ -620,8 +607,8 @@ Node* createMonkeyFistMesh2(BoolVector2D* exact_cover) {
       Node* last_node_in_column = column_headers[col_index]->up;
       node->up = last_node_in_column;
       last_node_in_column->down = node;
-      // update column header bonds with current node (it is the last node in
-      // the column now)
+      // update column header bonds with current node (it is the last node
+      // in the column now)
       column_headers[col_index]->up = node;
       column_headers[col_index]->up->down = column_headers[col_index];
       // set column pointer
@@ -640,6 +627,110 @@ Node* createMonkeyFistMesh2(BoolVector2D* exact_cover) {
       node->right = first_node_in_row;
       first_node_in_row->left = node;
     }
+  }
+
+  // free column headers array
+  free(column_headers);
+
+  return head;
+}
+
+// create monkey fist mesh without using exact cover matrix
+Node* createMonkeyFistMesh3(uint8_t** hexadoku, int** exact_cover_pregen,
+                            int exact_cover_pregen_size) {
+  if (DEBUG) printf("In function createMonkeyFistMesh2()\n");
+
+  int mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
+  int mesh_height = SUDOKU_SIZE * SUDOKU_SIZE * SUDOKU_SIZE;
+
+  // create head node
+  Node* head = initNode(-1, -1);
+
+  // create column nodes
+  // create column headers array
+  Node** column_headers = (Node**)malloc(mesh_width * sizeof(Node*));
+  for (int i = 0; i < mesh_width; i++) {
+    Node* column_node = initNode(-1, i);
+    // link with left neighbor, link left neighbor with this node
+    column_node->left = i ? column_headers[i - 1] : head;
+    column_node->left->right = column_node;
+    // set column pointer
+    column_node->column_header = column_node;
+    // set node count
+    column_node->nodeCount = 0;
+
+    // set up and down pointers (try to delete later)
+    column_node->up = column_node;
+    column_node->down = column_node;
+
+    // add to column headers array
+    column_headers[i] = column_node;
+  }
+  // link last column node with head node, first one is already linked
+  column_headers[mesh_width - 1]->right = head;
+  head->left = column_headers[mesh_width - 1];
+
+  // create mesh nodes using pregenerated exact cover matrix
+  // create first node manually
+  Node* node = initNode(exact_cover_pregen[0][0], exact_cover_pregen[0][1]);
+  node->left = node;
+  node->right = node;
+  node->column_header = column_headers[node->column_ID];
+  node->up = column_headers[node->column_ID];
+  node->down = column_headers[node->column_ID];
+  node->column_header->up = node;
+  node->column_header->down = node;
+  Node* prev_node = node;
+  Node* first_node_in_row = node;
+
+  for (int pregen_ind = 1; pregen_ind < exact_cover_pregen_size; pregen_ind++) {
+    // check that this node is not forbidden by clues
+    // find corresponding hexadoku cell
+    int row_index =
+        exact_cover_pregen[pregen_ind][0] / (SUDOKU_SIZE * SUDOKU_SIZE);
+    int col_index =
+        exact_cover_pregen[pregen_ind][0] % (SUDOKU_SIZE * SUDOKU_SIZE);
+    int digit = exact_cover_pregen[pregen_ind][1] % SUDOKU_SIZE + 1;
+    if (hexadoku[row_index][col_index] != 0 &&
+        hexadoku[row_index][col_index] != digit) {
+      continue;
+    }
+
+    // create node
+    int row_index = exact_cover_pregen[pregen_ind][0];
+    int col_index = exact_cover_pregen[pregen_ind][1];
+
+    Node* node = initNode(row_index, col_index);
+
+    // link node with left neighbor symmetrically
+    if (prev_node->row_ID == row_index) {
+      node->left = prev_node;
+      prev_node->right = node;
+    } else {
+      // this node is first node in row
+      node->left = node;
+      node->right = node;
+      // link last and first nodes in previous row
+      prev_node->right = first_node_in_row;
+      first_node_in_row->left = prev_node;
+      // update first node in row
+      first_node_in_row = node;
+    }
+
+    // link node with top neighbor symmetrically
+    Node* last_node_in_column = column_headers[col_index]->up;
+    node->up = last_node_in_column;
+    last_node_in_column->down = node;
+    // update column header
+    node->column_header = column_headers[col_index];
+    node->column_header->up = node;
+    node->down = node->column_header;
+
+    // increment node count of column header
+    node->column_header->nodeCount++;
+
+    // update pervious row node
+    prev_node = node;
   }
 
   // free column headers array
