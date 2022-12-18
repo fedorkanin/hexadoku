@@ -11,7 +11,7 @@
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
 #define DEBUG 0
-#define MEASURE_TIME 1
+// #define MEASURE_TIME
 
 size_t LINE_WIDTH = 4 * SUDOKU_SIZE + 1;
 size_t LINE_HEIGHT = 2 * SUDOKU_SIZE + 1;
@@ -577,173 +577,6 @@ Node* initNode(int rowID, int columnID) {
   return node;
 }
 
-// struct node vector
-typedef struct NodeVector {
-  Node** data;
-  int size;
-  int capacity;
-} NodeVector;
-
-NodeVector* createNodeVector(int capacity) {
-  NodeVector* v = (NodeVector*)malloc(sizeof(NodeVector));
-  v->data = (Node**)malloc(capacity * sizeof(Node*));
-  v->size = 0;
-  v->capacity = capacity;
-  return v;
-}
-
-void PushToNodeVector(NodeVector* v, Node* node) {
-  if (v->size == v->capacity) {
-    v->capacity *= 2;
-    v->data = (Node**)realloc(v->data, v->capacity * sizeof(Node*));
-  }
-  v->data[v->size++] = node;
-}
-
-void popFromNodeVector(NodeVector* v) {
-  free(v->data[v->size - 1]);
-  if (v->size > 0) {
-    v->size--;
-  }
-}
-
-void freeNodeVector(NodeVector* v) {
-  free(v->data);
-  free(v);
-}
-
-// index may be negative or greater than size
-int getCircularIndex(int index, int size) {
-  if (index < 0) {
-    return size + index;
-  } else if (index >= size) {
-    return index - size;
-  } else {
-    return index;
-  }
-}
-
-// funciton returns horizontal index of the closest left neighbor with
-// value 1
-int leftNeighborId(BoolVector2D* exact_cover, int row, int column) {
-  int left_neighbor_id = column;
-  do {
-    left_neighbor_id =
-        getCircularIndex(left_neighbor_id - 1, exact_cover->data[0]->capacity);
-  } while (exact_cover->data[row]->data[left_neighbor_id] == false);
-  return left_neighbor_id;
-}
-// funciton returns horizontal index of the closest right neighbor with
-// value
-// 1
-int rightNeighborId(BoolVector2D* exact_cover, int row, int column) {
-  int right_neighbor_id = column;
-  do {
-    right_neighbor_id =
-        getCircularIndex(right_neighbor_id + 1, exact_cover->data[0]->capacity);
-  } while (exact_cover->data[row]->data[right_neighbor_id] == false);
-  return right_neighbor_id;
-}
-// funciton returns vertical index of the closest top neighbor with value
-// 1
-int topNeighborId(BoolVector2D* exact_cover, int row, int column) {
-  int top_neighbor_id = row;
-  do {
-    top_neighbor_id =
-        getCircularIndex(top_neighbor_id - 1, exact_cover->capacity);
-  } while (exact_cover->data[top_neighbor_id]->data[column] == false);
-  return top_neighbor_id;
-}
-// funciton returns vertical index of the closest bottom neighbor with
-// value 1
-int bottomNeighborId(BoolVector2D* exact_cover, int row, int column) {
-  int bottom_neighbor_id = row;
-  do {
-    bottom_neighbor_id =
-        getCircularIndex(bottom_neighbor_id + 1, exact_cover->capacity);
-  } while (exact_cover->data[bottom_neighbor_id]->data[column] == false);
-  return bottom_neighbor_id;
-}
-
-// create monkey fist node mesh form exact cover matrix represented by
-// BoolVector2D. Exact cover matrix must have an additiona first row of
-// 1's. Function returns pointer to the head node
-Node* createMonkeyFistMesh(BoolVector2D* exact_cover) {
-  if (DEBUG) printf("In function createMonkeyFistMesh()\n");
-  // create head node
-  Node* head = initNode(-1, -1);
-
-  int mesh_width = exact_cover->data[0]->capacity;
-  int mesh_height = exact_cover->capacity;
-  if (DEBUG)
-    printf("Mesh width: %d, Mesh height: %d\n", mesh_width, mesh_height);
-
-  // create temporary 2d matrix of nodes
-  Node*** node_matrix = (Node***)malloc(mesh_height * sizeof(Node**));
-  for (int i = 0; i < mesh_height; i++) {
-    node_matrix[i] = (Node**)malloc(mesh_width * sizeof(Node*));
-    // initialize all pointers to NULL
-    for (int j = 0; j < mesh_width; j++) node_matrix[i][j] = NULL;
-  }
-
-  // create column nodes
-  for (int i = 0; i < mesh_width; i++) {
-    Node* column_node = initNode(-1, i);
-    // link with left neighbor, link left neighbor with this node
-    column_node->left = i ? node_matrix[0][i - 1] : head;
-    column_node->left->right = column_node;
-    // set column pointer
-    column_node->column_header = column_node;
-    // set node count
-    column_node->nodeCount = 0;
-    // add to node matrix
-    node_matrix[0][i] = column_node;
-  }
-  // link last column node with head node, first one is already linked
-  node_matrix[0][mesh_width - 1]->right = head;
-  head->left = node_matrix[0][mesh_width - 1];
-
-  // create mesh nodes
-  for (int row_index = 1; row_index < mesh_height; row_index++) {
-    Node* node;
-    for (int col_index = 0; col_index < mesh_width; col_index++) {
-      if (exact_cover->data[row_index]->data[col_index] == false) continue;
-      // create node
-      node = initNode(row_index - 1, col_index);
-      // add to node matrix
-      node_matrix[row_index][col_index] = node;
-      // link node with horizontral neighbors
-      node->left = node_matrix[row_index][leftNeighborId(exact_cover, row_index,
-                                                         col_index)];
-      node->right = node_matrix[row_index][rightNeighborId(
-          exact_cover, row_index, col_index)];
-      // link horizontal neighbors with this node
-      if (node->left) node->left->right = node;
-      if (node->right) node->right->left = node;
-      // link node with vertical neighbors
-      node->up = node_matrix[topNeighborId(exact_cover, row_index, col_index)]
-                            [col_index];
-      node->down = node_matrix[bottomNeighborId(exact_cover, row_index,
-                                                col_index)][col_index];
-      // link vertical neighbors with this node
-      if (node->up) node->up->down = node;
-      if (node->down) node->down->up = node;
-      // set column pointer
-      node->column_header = node_matrix[0][col_index];
-      // set node count
-      node->nodeCount = 0;
-      // increment node count of column header
-      node->column_header->nodeCount++;
-    }
-  }
-
-  // free node matrix
-  for (int i = 0; i < mesh_height; i++) free(node_matrix[i]);
-  free(node_matrix);
-
-  return head;
-}
-
 Node* createMonkeyFistMesh2(BoolVector2D* exact_cover) {
   if (DEBUG) printf("In function createMonkeyFistMesh2()\n");
   // create head node
@@ -1041,7 +874,9 @@ int main(void) {
 #endif
   BoolVector2D* exact_cover = hexadokuToExactCover(hexadoku);
   if (!isExactCoverValid(exact_cover)) {
-    if (!MEASURE_TIME) printf("Nespravny vstup.\n");
+#ifndef MEASURE_TIME
+    printf("Nespravny vstup.\n");
+#endif
     // free memory
     for (int i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
     free(hexadoku);
