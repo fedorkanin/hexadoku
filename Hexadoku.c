@@ -11,7 +11,7 @@
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
 #define DEBUG 0
-#define MEASURE_TIME
+// #define MEASURE_TIME
 
 size_t LINE_WIDTH = 4 * SUDOKU_SIZE + 1;
 size_t LINE_HEIGHT = 2 * SUDOKU_SIZE + 1;
@@ -4159,6 +4159,7 @@ Node* getMinColumn(Node* head) {
 
 uint8_t** hexadoku_global;
 int solution_count_global = 0;
+IntVector* solution_global;
 
 void solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
   // if (DEBUG) printf("In solutionToHexadoku\n");
@@ -4170,9 +4171,11 @@ void solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
   }
 }
 
+int funciton_call_count = 0;
+
 // print all solutions of monkey fist mesh
-void searchSolutions(Node* head, IntVector* solution) {
-  // if (DEBUG) printf("In searchSolutions\n");
+void searchSolutions(Node* head) {
+  funciton_call_count++;
   Node* row_node;
   Node* right_node;
   Node* left_node;
@@ -4180,45 +4183,34 @@ void searchSolutions(Node* head, IntVector* solution) {
 
   // if there are no more columns, we found a solution
   if (head->right == head) {
-    // print solution
-    if (DEBUG) printf("Solution: ");
-    if (DEBUG) printIntVector(solution);
-
     // convert solution to hexadoku
-    solutionToHexadoku(solution, hexadoku_global);
+    if (solution_count_global == 0)
+      solutionToHexadoku(solution_global, hexadoku_global);
     solution_count_global++;
     return;
   }
-
   // cover column with minimum node count
   column = getMinColumn(head);
-  // if (DEBUG)
-  // printf("Covering column %d, node count %d\n", column->column_ID,
-  //  column->nodeCount);
   cover(column);
-
   // iterate over column
   for (row_node = column->down; row_node != column; row_node = row_node->down) {
-    // if (DEBUG) printf("Iterating over row %d\n", row_node->row_ID);
-    // add row to solution
-    pushToIntVector(solution, row_node->row_ID);
+    if (solution_count_global == 0)
+      pushToIntVector(solution_global, row_node->row_ID);
 
     for (right_node = row_node->right; right_node != row_node;
          right_node = right_node->right)
       cover(right_node->column_header);
-
     // search for solutions
-    searchSolutions(head, solution);
-
+    searchSolutions(head);
     // if solution is not possible, backtrack and uncover column
-    popFromIntVector(solution);
-
+    if (solution_count_global == 0) popFromIntVector(solution_global);
     column = row_node->column_header;
     for (left_node = row_node->left; left_node != row_node;
          left_node = left_node->left)
       uncover(left_node->column_header);
   }
   uncover(column);
+  return;
 }
 
 int main(void) {
@@ -4267,7 +4259,8 @@ int main(void) {
   start = clock();
 #endif
   IntVector* solution = createIntVector(0);
-  searchSolutions(head, solution);
+  solution_global = solution;
+  searchSolutions(head);
 #ifdef MEASURE_TIME
   end = clock();
   cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
@@ -4283,6 +4276,8 @@ int main(void) {
     printf("Celkem reseni: %d\n", solution_count_global);
   }
 #endif
+
+  printf("funciton_call_count: %d\n", funciton_call_count);
 
 // free memory
 #ifdef MEASURE_TIME
