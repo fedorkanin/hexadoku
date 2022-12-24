@@ -4168,9 +4168,11 @@ Node* getMinColumn(Node* head) {
   Node* min_column = head->right;
   Node* column_header = head->right->right;
   while (column_header != head) {
-    if (column_header->nodeCount < min_column->nodeCount) {
+    // if node count of a node is 1 or less, return that node, it can't be any
+    // smaller
+    if (column_header->nodeCount <= 1) return column_header;
+    if (column_header->nodeCount < min_column->nodeCount)
       min_column = column_header;
-    }
     column_header = column_header->right;
   }
   return min_column;
