@@ -3339,7 +3339,7 @@ bool isLetterValid(char a) {
   return false;
 }
 
-// convert string to array of uint8_t
+// convert string to array of uint8_t (0-16)
 uint8_t* strToUint8t(char* string) {
   if (strlen(string) != LINE_WIDTH) {
     if (DEBUG) printf("Invalid line width.\n");
@@ -3360,7 +3360,7 @@ uint8_t* strToUint8t(char* string) {
         free(array);
         return NULL;
       }
-    } else if (string[i] == ' ') {
+    } else if (string[i] == ' ' && i % 16 != 0) {
       continue;
     } else {
       if (DEBUG) printf("Invalid character at position %zu.\n", i);
@@ -3411,7 +3411,7 @@ uint8_t** readIn() {
     return NULL;
   }
 
-  // read lines and delimiter lines
+  // read line with letters and delimiter lines
   for (size_t i = 0; i < LINE_HEIGHT - 2; i++) {
     free(line);
     if (i % 2 == 0) {
@@ -3467,45 +3467,43 @@ uint8_t** readIn() {
 // check if hexadoku is valid
 bool isHexadokuValid(uint8_t** hexadoku) {
   // check rows
-  for (int i = 0; i < 16; i++) {
-    uint8_t row[16] = {0};
-    for (int j = 0; j < 16; j++) {
-      if (hexadoku[i][j] != 0) {
-        if (row[hexadoku[i][j] - 1] != 0) {
-          if (DEBUG) printf("Invalid row %d.\n", i + 1);
-          return false;
-        }
-        row[hexadoku[i][j] - 1] = 1;
+  for (int i = 0; i < SUDOKU_SIZE; i++) {
+    bool row[SUDOKU_SIZE] = {0};
+    for (int j = 0; j < SUDOKU_SIZE; j++) {
+      if (hexadoku[i][j] == 0) continue;
+      if (row[hexadoku[i][j] - 1] != false) {
+        if (DEBUG) printf("Invalid row %d.\n", i + 1);
+        return false;
       }
+      row[hexadoku[i][j] - 1] = true;
     }
   }
 
   // check columns
-  for (int i = 0; i < 16; i++) {
-    uint8_t column[16] = {0};
-    for (int j = 0; j < 16; j++) {
-      if (hexadoku[j][i] != 0) {
-        if (column[hexadoku[j][i] - 1] != 0) {
-          if (DEBUG) printf("Invalid column %d.\n", i + 1);
-          return false;
-        }
-        column[hexadoku[j][i] - 1] = 1;
+  for (int i = 0; i < SUDOKU_SIZE; i++) {
+    bool column[SUDOKU_SIZE] = {0};
+    for (int j = 0; j < SUDOKU_SIZE; j++) {
+      if (hexadoku[j][i] == 0) continue;
+      if (column[hexadoku[j][i] - 1] != false) {
+        if (DEBUG) printf("Invalid column %d.\n", i + 1);
+        return false;
       }
+      column[hexadoku[j][i] - 1] = true;
     }
   }
 
   // check blocks
-  for (int i = 0; i < 16; i++) {
-    uint8_t block[16] = {0};
-    for (int j = 0; j < 16; j++) {
-      if (hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] != 0) {
-        if (block[hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] - 1] !=
-            0) {
-          if (DEBUG) printf("Invalid block %d.\n", i + 1);
-          return false;
-        }
-        block[hexadoku[(i / 4) * 4 + j / 4][(i % 4) * 4 + j % 4] - 1] = 1;
+  for (int i = 0; i < SUDOKU_SIZE; i++) {
+    bool block[SUDOKU_SIZE] = {0};
+    for (int j = 0; j < SUDOKU_SIZE; j++) {
+      int row = i / BOX_SIZE * BOX_SIZE + j / BOX_SIZE;
+      int column = i % BOX_SIZE * BOX_SIZE + j % BOX_SIZE;
+      if (hexadoku[row][column] == 0) continue;
+      if (block[hexadoku[row][column] - 1] != false) {
+        if (DEBUG) printf("Invalid block %d.\n", i + 1);
+        return false;
       }
+      block[hexadoku[row][column] - 1] = true;
     }
   }
 
@@ -3516,7 +3514,7 @@ bool isHexadokuValid(uint8_t** hexadoku) {
 void printHexadoku(uint8_t** hexadoku) {
   // print first line
   for (size_t i = 0; i < LINE_WIDTH - 1; i++) {
-    if (i % 4 == 0) {
+    if (i % BOX_SIZE == 0) {
       printf("+");
     } else {
       printf("-");
