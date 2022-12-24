@@ -3927,6 +3927,82 @@ Node* createMonkeyFistMesh2(BoolVector2D* exact_cover) {
   return head;
 }
 
+// merge sort circular two-way horizontal linked list of nodes
+// head is the first node in the list
+
+// get middle of linked list
+Node* getMiddle(Node* head) {
+  if (!head) return head;
+  Node* slow = head;
+  Node* fast = head->right;
+  while (fast) {
+    fast = fast->right;
+    if (fast) {
+      slow = slow->right;
+      fast = fast->right;
+    }
+  }
+  return slow;
+}
+
+// merge two sorted linked lists with custom comparator
+Node* merge(Node* first, Node* second, bool (*comparator)(Node*, Node*)) {
+  if (!first) return second;
+  if (!second) return first;
+
+  // pick the smaller value
+  if (comparator(first, second)) {
+    first->right = merge(first->right, second, comparator);
+    first->right->left = first;
+    first->left = NULL;
+    return first;
+  } else {
+    second->right = merge(first, second->right, comparator);
+    second->right->left = second;
+    second->left = NULL;
+    return second;
+  }
+}
+
+// merge sort linked list with custom comparator
+Node* mergeSort(Node* head, bool (*comparator)(Node*, Node*)) {
+  if (!head || !head->right) return head;
+
+  // split list in two halves
+  Node* middle = getMiddle(head);
+  Node* second = middle->right;
+  middle->right = NULL;
+
+  // sort halves
+  Node* left = mergeSort(head, comparator);
+  Node* right = mergeSort(second, comparator);
+
+  // merge halves
+  return merge(left, right, comparator);
+}
+
+bool compareNodeCount(Node* first, Node* second) {
+  return first->nodeCount < second->nodeCount;
+}
+
+// sort column headers by node count
+void sortColumnHeaders(Node* head) {
+  // de-cycle column headers
+  head->left->right = NULL;
+
+  head->right = mergeSort(head->right, compareNodeCount);
+  head->right->left = head;
+
+  // find last column header
+  Node* last_column_header = head->right;
+  while (last_column_header->right)
+    last_column_header = last_column_header->right;
+
+  // re-cycle column headers
+  head->left = last_column_header;
+  last_column_header->right = head;
+}
+
 // create monkey fist mesh without using exact cover matrix
 Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
   if (DEBUG) printf("In function createMonkeyFistMesh2()\n");
@@ -4193,7 +4269,7 @@ void solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
 }
 
 // print all solutions of monkey fist mesh
-void searchSolutions(Node* head) {
+void searchSolutions(Node* head, int k) {
   Node* row_node;
   Node* right_node;
   Node* left_node;
@@ -4219,7 +4295,7 @@ void searchSolutions(Node* head) {
          right_node = right_node->right)
       cover(right_node->column_header);
     // search for solutions
-    searchSolutions(head);
+    searchSolutions(head, k + 1);
     // if solution is not possible, backtrack and uncover column
     if (solution_count_global == 0) popFromIntVector(solution_global);
     column = row_node->column_header;
@@ -4265,8 +4341,8 @@ int main(void) {
   start = clock();
 #endif
 
-  // Node* head = createMonkeyFistMesh(exact_cover);
   Node* head = createMonkeyFistMesh3(hexadoku);
+  // sortColumnHeaders(head);
 
 #ifdef MEASURE_TIME
   end = clock();
@@ -4280,7 +4356,7 @@ int main(void) {
 
   IntVector* solution = createIntVector(0);
   solution_global = solution;
-  searchSolutions(head);
+  searchSolutions(head, 0);
 
 #ifdef MEASURE_TIME
   end = clock();
