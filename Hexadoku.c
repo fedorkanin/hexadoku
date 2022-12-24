@@ -3372,6 +3372,15 @@ uint8_t* strToUint8t(char* string) {
   return array;
 }
 
+// remove all spaces from string end
+void stripString(char* string) {
+  int len = strlen(string);
+  while (len > 0 && string[len - 1] == ' ') {
+    string[len - 1] = '\0';
+    len--;
+  }
+}
+
 // read string from stdin using getline, returns '\0' string in case
 // of failure
 char* getString() {
@@ -3385,6 +3394,8 @@ char* getString() {
   // remove trailing newline
   int len = strlen(string);
   if (len > 0 && string[len - 1] == '\n') string[len - 1] = '\0';
+  stripString(string);
+
   return string;
 }
 
@@ -3439,6 +3450,16 @@ uint8_t** readIn() {
     return NULL;
   }
   free(line);
+
+  // check no characters are left in stdin
+  line = getString();
+  if (strlen(line) != 0) {
+    if (DEBUG) printf("Input after hexadoku.\n");
+    free(line);
+    for (int j = 0; j < 16; j++) free(hexadoku[j]);
+    free(hexadoku);
+    return NULL;
+  }
 
   return hexadoku;
 }
@@ -4171,11 +4192,8 @@ void solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
   }
 }
 
-int funciton_call_count = 0;
-
 // print all solutions of monkey fist mesh
 void searchSolutions(Node* head) {
-  funciton_call_count++;
   Node* row_node;
   Node* right_node;
   Node* left_node;
@@ -4218,11 +4236,9 @@ int main(void) {
 #ifdef MEASURE_TIME
   clock_t start, end;
   double cpu_time_used;
-#endif
-
-#ifdef MEASURE_TIME
   start = clock();
 #endif
+
   printf("Zadejte hexadoku:\n");
   uint8_t** hexadoku = readIn();
   if (hexadoku == NULL) {
@@ -4236,6 +4252,7 @@ int main(void) {
     free(hexadoku);
     return 1;
   }
+
 #ifdef MEASURE_TIME
   end = clock();
   cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
@@ -4247,8 +4264,10 @@ int main(void) {
 #ifdef MEASURE_TIME
   start = clock();
 #endif
+
   // Node* head = createMonkeyFistMesh(exact_cover);
   Node* head = createMonkeyFistMesh3(hexadoku);
+
 #ifdef MEASURE_TIME
   end = clock();
   cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
@@ -4258,9 +4277,11 @@ int main(void) {
 #ifdef MEASURE_TIME
   start = clock();
 #endif
+
   IntVector* solution = createIntVector(0);
   solution_global = solution;
   searchSolutions(head);
+
 #ifdef MEASURE_TIME
   end = clock();
   cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
@@ -4276,8 +4297,6 @@ int main(void) {
     printf("Celkem reseni: %d\n", solution_count_global);
   }
 #endif
-
-  printf("funciton_call_count: %d\n", funciton_call_count);
 
 // free memory
 #ifdef MEASURE_TIME
