@@ -3985,12 +3985,15 @@ bool compareNodeCount(Node* first, Node* second) {
   return first->nodeCount < second->nodeCount;
 }
 
+bool randomComparator(Node* first, Node* second) { return rand() % 2; }
+
 // sort column headers by node count
 void sortColumnHeaders(Node* head) {
   // de-cycle column headers
   head->left->right = NULL;
 
   head->right = mergeSort(head->right, compareNodeCount);
+  // head->right = mergeSort(head->right, randomComparator);
   head->right->left = head;
 
   // find last column header
@@ -4298,7 +4301,7 @@ void searchSolutions(Node* head, int k) {
     searchSolutions(head, k + 1);
     // if solution is not possible, backtrack and uncover column
     if (solution_count_global == 0) popFromIntVector(solution_global);
-    column = row_node->column_header;
+    // column = row_node->column_header;
     for (left_node = row_node->left; left_node != row_node;
          left_node = left_node->left)
       uncover(left_node->column_header);
