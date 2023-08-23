@@ -1,5 +1,7 @@
 #!/bin/bash
 
+g++ -Wall -pedantic -O2 Hexadoku.c -o Hexadoku
+
 PROG=./Hexadoku
 
 for IN_FILE in data/cze/*_in.txt ; do
