@@ -1,50 +1,38 @@
 #!/bin/bash
 
-g++ -Wall -pedantic -O2 Hexadoku.c -o Hexadoku
+PROG=./bin/hexadoku
+TESTS_DIRS=("data/cze" "data/extra/CZE")
 
-PROG=./Hexadoku
-TESTS_DIR=data/cze
+# Function to clean up temporary files
+clean_up() {
+  rm -f time.txt test_out.txt
+}
 
-# script to test the program and output the time it takes to solve the puzzle
-# usage: ./testtime.sh <input file> 
-
-# get the input files from the folder tests/
-for IN_FILE in $TESTS_DIR/*_in.txt ; do
-    # get the reference file from the folder tests/
-    REF_FILE=`echo -n $IN_FILE | sed "s/_in/_out/"`
-    # run the program and output the time it takes to solve the puzzle
-    { time $PROG < $IN_FILE > my_out.txt ; } 2> time.txt
-    # if the output is different from the reference file, print the error
-    if ! diff $REF_FILE my_out.txt ; then
-        echo "Fail: $IN_FILE\n";
-        echo "REF FILE: $REF_FILE";
-        exit
+# Function to run tests for a given directory
+run_tests() {
+  local tests_dir=$1
+  for IN_FILE in "$tests_dir"/*_in.txt ; do
+    REF_FILE="${IN_FILE/_in.txt/_out.txt}"
+    { time $PROG < "$IN_FILE" > test_out.txt ; } 2> time.txt
+    if ! diff "$REF_FILE" test_out.txt ; then
+      echo "Fail: $IN_FILE"
+      echo "REF FILE: $REF_FILE"
+      clean_up
+      exit 1
     else
-        # if the output is the same as the reference file, print the time it took to solve the puzzle
-        echo "OK: $IN_FILE" | tr '\n' ' '
-        cat time.txt | tr '\n' ' ' | tr -s ' '  
-        echo ""
+      echo "OK: $IN_FILE" | tr '\n' ' '
+      cat time.txt | tr '\n' ' ' | tr -s ' '
+      echo ""
     fi
+  done
+}
+
+# Run tests for each directory
+for tests_dir in "${TESTS_DIRS[@]}"; do
+  run_tests "$tests_dir"
+  echo ''
 done
+
+clean_up
 
 echo ''
-
-TESTS_DIR=data/extra/CZE
-# get the input files from the folder tests/
-for IN_FILE in $TESTS_DIR/*_in.txt ; do
-    # get the reference file from the folder tests/
-    REF_FILE=`echo -n $IN_FILE | sed "s/_in/_out/"`
-    # run the program and output the time it takes to solve the puzzle
-    { time $PROG < $IN_FILE > my_out.txt ; } 2> time.txt
-    # if the output is different from the reference file, print the error
-    if ! diff $REF_FILE my_out.txt ; then
-        echo "Fail: $IN_FILE\n";
-        echo "REF FILE: $REF_FILE";
-        exit
-    else
-        # if the output is the same as the reference file, print the time it took to solve the puzzle
-        echo "OK: $IN_FILE" | tr '\n' ' '
-        cat time.txt | tr '\n' ' ' | tr -s ' '  
-        echo ""
-    fi
-done
