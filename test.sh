@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROG=./bin/hexadoku
+PROG=./bin/hexadoku.out
 TESTS_DIRS=("data/basic" "data/extra")
 
 # Function to clean up temporary files

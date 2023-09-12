@@ -12,7 +12,17 @@
 
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
-#define DEBUG 0
+
+#ifdef DEBUG
+#define DEBUG_PRINTF(...)    \
+    do {                     \
+        printf(__VA_ARGS__); \
+    } while (false)
+#else
+#define DEBUG_PRINTF(...) \
+    do {                  \
+    } while (false)
+#endif
 
 size_t LINE_WIDTH  = 4 * SUDOKU_SIZE + 1;
 size_t LINE_HEIGHT = 2 * SUDOKU_SIZE + 1;
@@ -20,33 +30,33 @@ size_t LINE_HEIGHT = 2 * SUDOKU_SIZE + 1;
 bool   isDelimiterStringValid(char* string, bool is_dashed) {
     size_t line_width = (int)SUDOKU_SIZE * 4 + 1;
     if (strlen(string) != line_width) {
-        if (DEBUG) printf("Invalid line width.\n");
-        if (DEBUG)
-            printf("Expected: %zu, got: %zu\n", line_width, strlen(string));
+        DEBUG_PRINTF("Invalid line width.\n");
+
+        DEBUG_PRINTF("Expected: %zu, got: %zu\n", line_width, strlen(string));
         return false;
     }
 
     if (is_dashed) {
         for (size_t i = 0; i < line_width; i++) {
             if (i % 4 == 0 && string[i] != '+') {
-                if (DEBUG) printf("Invalid character at position %zu.\n", i);
-                if (DEBUG) printf("Expected: '+', got: '%c'\n", string[i]);
+                DEBUG_PRINTF("Invalid character at position %zu.\n", i);
+                DEBUG_PRINTF("Expected: '+', got: '%c'\n", string[i]);
                 return false;
             } else if (i % 4 && string[i] != ' ') {
-                if (DEBUG) printf("Invalid character at position %zu.\n", i);
-                if (DEBUG) printf("Expected: ' ', got: '%c'\n", string[i]);
+                DEBUG_PRINTF("Invalid character at position %zu.\n", i);
+                DEBUG_PRINTF("Expected: ' ', got: '%c'\n", string[i]);
                 return false;
             }
         }
     } else {
         for (size_t i = 0; i < line_width; i++) {
             if (i % 4 == 0 && string[i] != '+') {
-                if (DEBUG) printf("Invalid character at position %zu.\n", i);
-                if (DEBUG) printf("Expected: '+', got: '%c'\n", string[i]);
+                DEBUG_PRINTF("Invalid character at position %zu.\n", i);
+                DEBUG_PRINTF("Expected: '+', got: '%c'\n", string[i]);
                 return false;
             } else if (i % 4 && string[i] != '-') {
-                if (DEBUG) printf("Invalid character at position %zu.\n", i);
-                if (DEBUG) printf("Expected: '-', got: '%c'\n", string[i]);
+                DEBUG_PRINTF("Invalid character at position %zu.\n", i);
+                DEBUG_PRINTF("Expected: '-', got: '%c'\n", string[i]);
                 return false;
             }
         }
@@ -63,7 +73,7 @@ bool isLetterValid(char a) {
 // convert string to array of uint8_t (0-16)
 uint8_t* strToUint8t(char* string) {
     if (strlen(string) != LINE_WIDTH) {
-        if (DEBUG) printf("Invalid line width.\n");
+        DEBUG_PRINTF("Invalid line width.\n");
         return NULL;
     }
 
@@ -78,14 +88,14 @@ uint8_t* strToUint8t(char* string) {
                 array[(i - 2) / 4] =
                     (string[i] == ' ') ? 0 : string[i] - 'a' + 1;
             else {
-                if (DEBUG) printf("Invalid letter at position %zu.\n", i);
+                DEBUG_PRINTF("Invalid letter at position %zu.\n", i);
                 free(array);
                 return NULL;
             }
         } else if (string[i] == ' ' && i % 16 != 0) {
             continue;
         } else {
-            if (DEBUG) printf("Invalid character at position %zu.\n", i);
+            DEBUG_PRINTF("Invalid character at position %zu.\n", i);
             free(array);
             return NULL;
         }
@@ -127,7 +137,7 @@ uint8_t** readIn() {
     // read first line
     char*     line = getString();
     if (!isDelimiterStringValid(line, false)) {
-        if (DEBUG) printf("Invalid first line.\n");
+        DEBUG_PRINTF("Invalid first line.\n");
         free(line);
         free(hexadoku);
         return NULL;
@@ -141,7 +151,7 @@ uint8_t** readIn() {
             line            = getString();
             hexadoku[i / 2] = strToUint8t(line);
             if (hexadoku[i / 2] == NULL) {
-                if (DEBUG) printf("Invalid line %zu.\n", i / 2 + 1);
+                DEBUG_PRINTF("Invalid line %zu.\n", i / 2 + 1);
                 free(line);
                 for (size_t j = 0; j <= i / 2; j++) free(hexadoku[j]);
                 free(hexadoku);
@@ -152,7 +162,7 @@ uint8_t** readIn() {
             line           = getString();
             bool is_dashed = (i / 2 + 1) % 4 == 0 ? false : true;
             if (!isDelimiterStringValid(line, is_dashed)) {
-                if (DEBUG) printf("Invalid delimiter line %zu.\n", i / 2 + 1);
+                DEBUG_PRINTF("Invalid delimiter line %zu.\n", i / 2 + 1);
                 free(line);
                 for (size_t j = 0; j <= i / 2; j++) free(hexadoku[j]);
                 free(hexadoku);
@@ -165,7 +175,7 @@ uint8_t** readIn() {
     // read last line
     line = getString();
     if (!isDelimiterStringValid(line, false)) {
-        if (DEBUG) printf("Invalid last line.\n");
+        DEBUG_PRINTF("Invalid last line.\n");
         free(line);
         for (int j = 0; j < 16; j++) free(hexadoku[j]);
         free(hexadoku);
@@ -176,7 +186,7 @@ uint8_t** readIn() {
     // check no characters are left in stdin
     line = getString();
     if (strlen(line) != 0) {
-        if (DEBUG) printf("Input after hexadoku.\n");
+        DEBUG_PRINTF("Input after hexadoku.\n");
         free(line);
         for (int j = 0; j < 16; j++) free(hexadoku[j]);
         free(hexadoku);
@@ -194,7 +204,7 @@ bool isHexadokuValid(uint8_t** hexadoku) {
         for (int j = 0; j < SUDOKU_SIZE; j++) {
             if (hexadoku[i][j] == 0) continue;
             if (row[hexadoku[i][j] - 1] != false) {
-                if (DEBUG) printf("Invalid row %d.\n", i + 1);
+                DEBUG_PRINTF("Invalid row %d.\n", i + 1);
                 return false;
             }
             row[hexadoku[i][j] - 1] = true;
@@ -207,7 +217,7 @@ bool isHexadokuValid(uint8_t** hexadoku) {
         for (int j = 0; j < SUDOKU_SIZE; j++) {
             if (hexadoku[j][i] == 0) continue;
             if (column[hexadoku[j][i] - 1] != false) {
-                if (DEBUG) printf("Invalid column %d.\n", i + 1);
+                DEBUG_PRINTF("Invalid column %d.\n", i + 1);
                 return false;
             }
             column[hexadoku[j][i] - 1] = true;
@@ -222,7 +232,7 @@ bool isHexadokuValid(uint8_t** hexadoku) {
             int column = i % BOX_SIZE * BOX_SIZE + j % BOX_SIZE;
             if (hexadoku[row][column] == 0) continue;
             if (block[hexadoku[row][column] - 1] != false) {
-                if (DEBUG) printf("Invalid block %d.\n", i + 1);
+                DEBUG_PRINTF("Invalid block %d.\n", i + 1);
                 return false;
             }
             block[hexadoku[row][column] - 1] = true;
@@ -463,7 +473,7 @@ int createBoxConstraints(BoolVector2D* exact_cover, int header) {
 }
 
 BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
-    if (DEBUG) printf("Converting hexadoku to exact cover...\n");
+    DEBUG_PRINTF("Converting hexadoku to exact cover...\n");
     // possible candidates for each cell
     int           rows_number = pow(SUDOKU_SIZE, 3) + 1;
     // 4 constraints for each cell
@@ -489,9 +499,8 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
             exact_cover->data[i]->data[j] = false;
 
     // print width and height of BoolVector2D
-    if (DEBUG)
-        printf("Matrix width: %d, height: %d\n", exact_cover->data[0]->capacity,
-               exact_cover->capacity);
+    DEBUG_PRINTF("Matrix width: %d, height: %d\n",
+                 exact_cover->data[0]->capacity, exact_cover->capacity);
 
     // fill exact cover matrix as if sudoku was empty
     // use indexInExactCoverMatrix to get index in exact cover matrix
@@ -526,11 +535,11 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
 
 // validate exact cover matrix
 bool isExactCoverValid(BoolVector2D* exact_cover) {
-    if (DEBUG) printf("Validating exact cover matrix...\n");
+    DEBUG_PRINTF("Validating exact cover matrix...\n");
     // check that first row is filled with 1s
     for (int i = 0; i < exact_cover->data[0]->capacity; i++) {
         if (!exact_cover->data[0]->data[i]) {
-            if (DEBUG) printf("First row is not filled with 1s!\n");
+            DEBUG_PRINTF("First row is not filled with 1s!\n");
             return false;
         }
     }
@@ -544,11 +553,11 @@ bool isExactCoverValid(BoolVector2D* exact_cover) {
             }
         }
         if (!has_one) {
-            if (DEBUG) printf("Column %d has no 1s!\n", i);
+            DEBUG_PRINTF("Column %d has no 1s!\n", i);
             return false;
         }
     }
-    if (DEBUG) printf("Exact cover validation complete!\n");
+    DEBUG_PRINTF("Exact cover validation complete!\n");
     return true;
 }
 
@@ -556,7 +565,6 @@ bool isExactCoverValid(BoolVector2D* exact_cover) {
 // exact cover solver based on DLX algorithm by Donad Knuth
 // https://arxiv.org/pdf/cs/0011047.pdf
 
-// struct node
 typedef struct node {
     struct node* left;
     struct node* right;
@@ -583,7 +591,7 @@ Node* initNode(int rowID, int columnID) {
 }
 
 Node* createMonkeyFistMesh2(BoolVector2D* exact_cover) {
-    if (DEBUG) printf("In function createMonkeyFistMesh2()\n");
+    DEBUG_PRINTF("In function createMonkeyFistMesh2()\n");
     // create head node
     Node*  head = initNode(-1, -1);
 
@@ -735,7 +743,7 @@ void sortColumnHeaders(Node* head) {
 
 // create monkey fist mesh without using exact cover matrix
 Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
-    if (DEBUG) printf("In function createMonkeyFistMesh2()\n");
+    DEBUG_PRINTF("In function createMonkeyFistMesh2()\n");
 
     int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
     // int mesh_height = SUDOKU_SIZE * SUDOKU_SIZE * SUDOKU_SIZE;
@@ -919,18 +927,18 @@ void freeMonkeyFistMesh(Node* head) {
         node = column_header->down;
         while (node != column_header) {
             Node* next_node = node->down;
-            // if (DEBUG)
-            // printf("Freeing node r%d, c%d\n", node->row_ID, node->column_ID);
+            // DEBUG_PRINTF("Freeing node r%d, c%d\n", node->row_ID,
+            //              node->column_ID);
             free(node);
             node = next_node;
         }
         Node* next_column_header = column_header->right;
-        // if (DEBUG) printf("Freeing column header c%d\n",
+        // DEBUG_PRINTF("Freeing column header c%d\n",
         // column_header->column_ID);
         free(column_header);
         column_header = next_column_header;
     }
-    // if (DEBUG) printf("Freeing head\n");
+    // DEBUG_PRINTF("Freeing head\n");
     free(head);
 }
 
@@ -996,7 +1004,7 @@ int        solution_count_global = 0;
 IntVector* solution_global;
 
 void       solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
-    // if (DEBUG) printf("In solutionToHexadoku\n");
+    // DEBUG_PRINTF("In solutionToHexadoku\n");
     for (int i = 0; i < solution->size; i++) {
         int row    = rowFromExactCoverIndex(solution->data[i]);
         int column = columnFromExactCoverIndex(solution->data[i]);
