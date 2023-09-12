@@ -1,0 +1,9 @@
+*.dSYM
+
+# files with no extension
+*
+!/**/
+!*.*
+
+*.o
+*.out
