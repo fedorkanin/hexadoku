@@ -1,5 +1,7 @@
 #!/bin/bash
 
+g++ -Wall -pedantic -O2 Hexadoku.c -o Hexadoku
+
 PROG=./Hexadoku
 TESTS_DIR=data/cze
 
