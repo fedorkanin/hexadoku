@@ -8,7 +8,7 @@ OBJ_DIR = obj
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
 BIN_DIR = bin
-TARGET = $(BIN_DIR)/hexadoku.out
+TARGET = $(BIN_DIR)/main.out
 
 TEST_SCRIPT = test.sh
 
