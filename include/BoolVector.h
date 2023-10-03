@@ -1,5 +1,4 @@
-#ifndef BOOLVECTOR_H
-#define BOOLVECTOR_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -15,5 +14,3 @@ void        pushToBoolVector(BoolVector* v, bool value);
 void        popFromBoolVector(BoolVector* v);
 void        fillBoolVector(BoolVector* v, bool value);
 void        freeBoolVector(BoolVector* v);
-
-#endif /* BOOLVECTOR_H */

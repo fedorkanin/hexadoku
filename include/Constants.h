@@ -1,5 +1,4 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#pragma once
 
 #include <stddef.h>
 
@@ -19,5 +18,3 @@
 
 extern const size_t LINE_WIDTH;
 extern const size_t LINE_HEIGHT;
-
-#endif  // CONSTANTS_H

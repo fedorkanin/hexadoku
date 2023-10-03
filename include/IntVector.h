@@ -1,5 +1,4 @@
-#ifndef INTVECTOR_H
-#define INTVECTOR_H
+#pragma once
 
 typedef struct IntVector {
     int* data;
@@ -12,5 +11,3 @@ void       pushToIntVector(IntVector* v, int value);
 void       popFromIntVector(IntVector* v);
 void       printIntVector(IntVector* v);
 void       freeIntVector(IntVector* v);
-
-#endif /* INTVECTOR_H */

@@ -1,5 +1,4 @@
-#ifndef BOOLVECTOR2D_H
-#define BOOLVECTOR2D_H
+#pragma once
 
 #include "BoolVector.h"
 
@@ -14,5 +13,3 @@ void          pushToBoolVector2D(BoolVector2D* v, BoolVector* value);
 void          printBoolVector2D(BoolVector2D* v);
 BoolVector2D* boolArrayToVector2D(bool array[][4], int height, int width);
 void          freeBoolVector2D(BoolVector2D* v);
-
-#endif /* BOOLVECTOR2D_H */

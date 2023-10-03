@@ -1,15 +1,14 @@
-#ifndef INPUT_FUNCTIONS_H
-#define INPUT_FUNCTIONS_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "Constants.h"
 
-bool     isDelimiterStringValid(char* string, bool is_dashed);
-bool     isLetterValid(char a);
-uint8_t* strToUint8t(char* string);
-void     stripString(char* string);
-char*    getString();
+uint8_t** readIn();
+bool      isDelimiterStringValid(char* string, bool is_dashed);
+bool      isLetterValid(char a);
 
-#endif  // INPUT_FUNCTIONS_H
+uint8_t*  strToUint8t(char* string);
+void      stripString(char* string);
+char*     getString();

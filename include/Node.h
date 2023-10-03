@@ -1,5 +1,4 @@
-#ifndef NODE_H
-#define NODE_H
+#pragma once
 
 #include <stdlib.h>
 
@@ -16,5 +15,3 @@ typedef struct node {
 } Node;
 
 Node* initNode(int rowID, int columnID);
-
-#endif  // NODE_H
