@@ -60,8 +60,8 @@ int createBoxConstraints(BoolVector2D* exact_cover, int header) {
     return header;
 }
 
-BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
-    DEBUG_PRINTF("Converting hexadoku to exact cover...\n");
+BoolVector2D* hexadokuToExactCover(uint8_t** cell_matrix) {
+    DEBUG_PRINTF("Converting cell_matrix to exact cover...\n");
     // possible candidates for each cell
     int           rows_number = pow(SUDOKU_SIZE, 3) + 1;
     // 4 constraints for each cell
@@ -104,7 +104,7 @@ BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
     // fill exact cover matrix with given sudoku clues
     for (int row = 0; row < SUDOKU_SIZE; row++) {
         for (int column = 0; column < SUDOKU_SIZE; column++) {
-            int cur_clue = hexadoku[row][column];
+            int cur_clue = cell_matrix[row][column];
             if (cur_clue != 0) {
                 for (int num = 0; num < SUDOKU_SIZE; num++) {
                     if (num != cur_clue - 1) {

@@ -1,7 +1,7 @@
 #include "MonkeyFistMesh.h"
 
 // create monkey fist mesh without using exact cover matrix
-Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
+Node* createMonkeyFistMesh3(uint8_t** cell_matrix) {
     DEBUG_PRINTF("In function createMonkeyFistMesh3()\n");
 
     int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
@@ -48,8 +48,8 @@ Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
         // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
         //        hex_row_index, hex_col_index, digit);
 
-        if (hexadoku[hex_row_index][hex_col_index] == 0 ||
-            hexadoku[hex_row_index][hex_col_index] == digit)
+        if (cell_matrix[hex_row_index][hex_col_index] == 0 ||
+            cell_matrix[hex_row_index][hex_col_index] == digit)
             break;
     }
 
@@ -78,8 +78,8 @@ Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
         // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
         //        hex_row_index, hex_col_index, digit);
 
-        if (hexadoku[hex_row_index][hex_col_index] != 0 &&
-            hexadoku[hex_row_index][hex_col_index] != digit)
+        if (cell_matrix[hex_row_index][hex_col_index] != 0 &&
+            cell_matrix[hex_row_index][hex_col_index] != digit)
             continue;
 
         // create node

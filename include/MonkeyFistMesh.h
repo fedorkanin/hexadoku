@@ -7,7 +7,7 @@
 #include "Coords.h"
 #include "Node.h"
 
-Node* createMonkeyFistMesh3(uint8_t** hexadoku);
+Node* createMonkeyFistMesh3(uint8_t** cell_matrix);
 void  printMonkeyFistMesh(Node* head);
 void  validateMonkeyFistMesh(Node* head);
 void  freeMonkeyFistMesh(Node* head);

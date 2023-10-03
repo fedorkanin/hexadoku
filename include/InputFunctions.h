@@ -4,8 +4,10 @@
 #include <stdint.h>
 
 #include "Constants.h"
+#include "Hexadoku.h"
 
-uint8_t** readIn();
+Hexadoku* readIn();
+
 bool      isDelimiterStringValid(char* string, bool is_dashed);
 bool      isLetterValid(char a);
 

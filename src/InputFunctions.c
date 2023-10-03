@@ -4,69 +4,75 @@
 #include <stdlib.h>
 #include <string.h>
 
-// read 16x16 hexadoku from stdin. Unset positions are represented by 0.
-uint8_t** readIn() {
-    uint8_t** hexadoku = (uint8_t**)malloc(16 * sizeof(char*));
-    // read first line
-    char*     line = getString();
+Hexadoku* readIn() {
+    Hexadoku* hex    = (Hexadoku*)malloc(sizeof(Hexadoku));
+    hex->cell_matrix = (uint8_t**)malloc(16 * sizeof(uint8_t*));
+
+    // Read first line
+    char* line = getString();
     if (!isDelimiterStringValid(line, false)) {
         DEBUG_PRINTF("Invalid first line.\n");
         free(line);
-        free(hexadoku);
+        free(hex->cell_matrix);
+        free(hex);
         return NULL;
     }
 
-    // read line with letters and delimiter lines
+    // Read line with letters and delimiter lines
     for (size_t i = 0; i < LINE_HEIGHT - 2; i++) {
         free(line);
         if (i % 2 == 0) {
-            // read line with letters
-            line            = getString();
-            hexadoku[i / 2] = strToUint8t(line);
-            if (hexadoku[i / 2] == NULL) {
+            // Read line with letters
+            line                    = getString();
+            hex->cell_matrix[i / 2] = strToUint8t(line);
+            if (hex->cell_matrix[i / 2] == NULL) {
                 DEBUG_PRINTF("Invalid line %zu.\n", i / 2 + 1);
                 free(line);
-                for (size_t j = 0; j <= i / 2; j++) free(hexadoku[j]);
-                free(hexadoku);
+                for (size_t j = 0; j <= i / 2; j++) free(hex->cell_matrix[j]);
+                free(hex->cell_matrix);
+                free(hex);
                 return NULL;
             }
         } else {
-            // read delimiter line
+            // Read delimiter line
             line           = getString();
             bool is_dashed = (i / 2 + 1) % 4 == 0 ? false : true;
             if (!isDelimiterStringValid(line, is_dashed)) {
                 DEBUG_PRINTF("Invalid delimiter line %zu.\n", i / 2 + 1);
                 free(line);
-                for (size_t j = 0; j <= i / 2; j++) free(hexadoku[j]);
-                free(hexadoku);
+                for (size_t j = 0; j <= i / 2; j++) free(hex->cell_matrix[j]);
+                free(hex->cell_matrix);
+                free(hex);
                 return NULL;
             }
         }
     }
     free(line);
 
-    // read last line
+    // Read last line
     line = getString();
     if (!isDelimiterStringValid(line, false)) {
         DEBUG_PRINTF("Invalid last line.\n");
         free(line);
-        for (int j = 0; j < 16; j++) free(hexadoku[j]);
-        free(hexadoku);
+        for (int j = 0; j < 16; j++) free(hex->cell_matrix[j]);
+        free(hex->cell_matrix);
+        free(hex);
         return NULL;
     }
     free(line);
 
-    // check no characters are left in stdin
+    // Check no characters are left in stdin
     line = getString();
     if (strlen(line) != 0) {
-        DEBUG_PRINTF("Input after hexadoku.\n");
+        DEBUG_PRINTF("Input after cell_matrix.\n");
         free(line);
-        for (int j = 0; j < 16; j++) free(hexadoku[j]);
-        free(hexadoku);
+        for (int j = 0; j < 16; j++) free(hex->cell_matrix[j]);
+        free(hex->cell_matrix);
+        free(hex);
         return NULL;
     }
 
-    return hexadoku;
+    return hex;
 }
 
 bool isDelimiterStringValid(char* string, bool is_dashed) {

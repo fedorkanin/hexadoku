@@ -33,6 +33,7 @@ void printIntVector(IntVector* v) {
 }
 
 void freeIntVector(IntVector* v) {
+    if (v == NULL) return;
     free(v->data);
     free(v);
 }
