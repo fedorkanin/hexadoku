@@ -1,8 +1,8 @@
 #include "MonkeyFistMesh.h"
 
 // create monkey fist mesh without using exact cover matrix
-Node* createMonkeyFistMesh3(uint8_t** cell_matrix) {
-    DEBUG_PRINTF("In function createMonkeyFistMesh3()\n");
+Node* createMonkeyFistMesh(uint8_t** cell_matrix) {
+    DEBUG_PRINTF("In function createMonkeyFistMesh()\n");
 
     int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
     // int mesh_height = SUDOKU_SIZE * SUDOKU_SIZE * SUDOKU_SIZE;

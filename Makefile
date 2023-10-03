@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -pedantic -Iinclude -O2 -std=c++17
+CFLAGS = -Wall -pedantic -Iinclude -O2 -std=c++17 -MMD -MP
 DEBUG_FLAGS = -g -DDEBUG
 
 SRC_DIR = src
@@ -34,3 +34,5 @@ test: compile
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) Hexadoku.dSYM
+
+-include $(OBJ_FILES:.o=.d)

@@ -84,7 +84,7 @@ int main(void) {
     hex->solution       = createIntVector(0);
     hex->solution_count = 0;
 
-    Node* head = createMonkeyFistMesh3(hex->cell_matrix);
+    Node* head = createMonkeyFistMesh(hex->cell_matrix);
     searchSolutions(head, 0, hex);
 
     if (hex->solution_count == 0) {
