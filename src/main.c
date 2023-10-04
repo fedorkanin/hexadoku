@@ -22,9 +22,9 @@
 
 void solutionToHexadoku(IntVector* solution, Hexadoku* hex) {
     for (int i = 0; i < solution->size; i++) {
-        int row    = rowFromExactCoverIndex(solution->data[i]);
-        int column = columnFromExactCoverIndex(solution->data[i]);
-        int value  = valueFromExactCoverIndex(solution->data[i]);
+        int row    = sudokuRowFromExactCoverRow(solution->data[i]);
+        int column = sudokuColumnFromExactCoverRow(solution->data[i]);
+        int value  = sudokuValueFromExactCoverRow(solution->data[i]);
 
         // Update the hexadoku within the Hexadoku struct
         hex->cell_matrix[row][column] = value;

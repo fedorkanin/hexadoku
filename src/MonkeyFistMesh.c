@@ -35,16 +35,14 @@ Node** createColumnHeaders(int mesh_width, Node* head) {
 }
 
 void createNodesUsingPregenArray(uint8_t** cell_matrix, Node** column_headers) {
-    int pregen_ind = 0;
+    int pregen_ind;
     for (pregen_ind = 0; pregen_ind < COORDS_ARRAY_SIZE; pregen_ind++) {
-        int hex_row_index =
-            COORDS_ARRAY[pregen_ind][0] / (SUDOKU_SIZE * SUDOKU_SIZE);
-        int hex_col_index =
-            COORDS_ARRAY[pregen_ind][0] / SUDOKU_SIZE % SUDOKU_SIZE;
-        int digit = COORDS_ARRAY[pregen_ind][0] % SUDOKU_SIZE + 1;
+        int sudoku_row    = sudokuRowFromExactCoverRow(pregen_ind);
+        int sudoku_column = sudokuColumnFromExactCoverRow(pregen_ind);
+        int sudoku_value  = sudokuValueFromExactCoverRow(pregen_ind);
 
-        if (cell_matrix[hex_row_index][hex_col_index] == 0 ||
-            cell_matrix[hex_row_index][hex_col_index] == digit)
+        if (cell_matrix[sudoku_row][sudoku_column] == 0 ||
+            cell_matrix[sudoku_row][sudoku_column] == sudoku_value)
             break;
     }
 
@@ -149,7 +147,6 @@ Node* createMonkeyFistMesh(uint8_t** cell_matrix) {
     return head;
 }
 
-// print monkey fist mesh
 void printMonkeyFistMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Hexadoku* readIn() {
+Hexadoku* readIn(void) {
     Hexadoku* hex    = (Hexadoku*)malloc(sizeof(Hexadoku));
     hex->cell_matrix = (uint8_t**)malloc(16 * sizeof(uint8_t*));
 
@@ -162,7 +162,7 @@ void stripString(char* string) {
 
 // read string from stdin using getline, returns '\0' string in case
 // of failure
-char* getString() {
+char* getString(void) {
     char*  string = NULL;
     size_t size   = 0;
     if (getline(&string, &size, stdin) == -1) {

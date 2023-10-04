@@ -6,11 +6,13 @@
 
 #include "BoolVector2D.h"
 #include "Constants.h"
+#include "IntVector.h"
 
-int           indexInExactCoverMatrix(int row, int column, int num);
-int           valueFromExactCoverIndex(int index);
-int           columnFromExactCoverIndex(int index);
-int           rowFromExactCoverIndex(int index);
+int           rowInExactCoverMatrix(int row, int column, int num);
+
+int           sudokuValueFromExactCoverRow(int index);
+int           sudokuColumnFromExactCoverRow(int index);
+int           sudokuRowFromExactCoverRow(int index);
 
 int           createCellConstraints(BoolVector2D* exact_cover, int header);
 int           createRowConstraints(BoolVector2D* exact_cover, int header);

@@ -1,17 +1,20 @@
 #include "ExactCover.h"
 
-int indexInExactCoverMatrix(int row, int column, int num) {
+int rowInExactCoverMatrix(int row, int column, int num) {
     // + 1 because first row is header
     return row * SUDOKU_SIZE * SUDOKU_SIZE + column * SUDOKU_SIZE + num + 1;
 }
 
-int valueFromExactCoverIndex(int index) { return index % SUDOKU_SIZE + 1; }
+// find out which constraints are satisfied by given sudoku clue
+// IntVector columnInExactCoverMatrix(int row, int column, int num) {}
 
-int columnFromExactCoverIndex(int index) {
+int sudokuValueFromExactCoverRow(int index) { return index % SUDOKU_SIZE + 1; }
+
+int sudokuColumnFromExactCoverRow(int index) {
     return (index / SUDOKU_SIZE) % SUDOKU_SIZE;
 }
 
-int rowFromExactCoverIndex(int index) {
+int sudokuRowFromExactCoverRow(int index) {
     return (index / SUDOKU_SIZE / SUDOKU_SIZE);
 }
 
@@ -19,7 +22,7 @@ int createCellConstraints(BoolVector2D* exact_cover, int header) {
     for (int row = 0; row < SUDOKU_SIZE; row++)
         for (int column = 0; column < SUDOKU_SIZE; column++, header++)
             for (int num = 0; num < SUDOKU_SIZE; num++) {
-                exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+                exact_cover->data[rowInExactCoverMatrix(row, column, num)]
                     ->data[header] = true;
             }
     return header;
@@ -29,7 +32,7 @@ int createRowConstraints(BoolVector2D* exact_cover, int header) {
     for (int row = 0; row < SUDOKU_SIZE; row++)
         for (int num = 0; num < SUDOKU_SIZE; num++, header++)
             for (int column = 0; column < SUDOKU_SIZE; column++) {
-                exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+                exact_cover->data[rowInExactCoverMatrix(row, column, num)]
                     ->data[header] = true;
             }
     return header;
@@ -39,7 +42,7 @@ int createColumnConstraints(BoolVector2D* exact_cover, int header) {
     for (int column = 0; column < SUDOKU_SIZE; column++)
         for (int num = 0; num < SUDOKU_SIZE; num++, header++)
             for (int row = 0; row < SUDOKU_SIZE; row++) {
-                exact_cover->data[indexInExactCoverMatrix(row, column, num)]
+                exact_cover->data[rowInExactCoverMatrix(row, column, num)]
                     ->data[header] = true;
             }
     return header;
@@ -52,7 +55,7 @@ int createBoxConstraints(BoolVector2D* exact_cover, int header) {
                 for (int box_row = 0; box_row < BOX_SIZE; box_row++)
                     for (int box_column = 0; box_column < BOX_SIZE;
                          box_column++) {
-                        int index = indexInExactCoverMatrix(
+                        int index = rowInExactCoverMatrix(
                             row + box_row, column + box_column, num);
                         exact_cover->data[index]->data[header] = true;
                     }
@@ -91,7 +94,7 @@ BoolVector2D* hexadokuToExactCover(uint8_t** cell_matrix) {
                  exact_cover->data[0]->capacity, exact_cover->capacity);
 
     // fill exact cover matrix as if sudoku was empty
-    // use indexInExactCoverMatrix to get index in exact cover matrix
+    // use rowInExactCoverMatrix to get index in exact cover matrix
     // for each cell
     // inspired by java implementation:
     // https://medium.com/javarevisited/buiding-a-sudoku-solver-in-java-with-dancing-links-180274b0b6c1
@@ -110,14 +113,16 @@ BoolVector2D* hexadokuToExactCover(uint8_t** cell_matrix) {
                     if (num != cur_clue - 1) {
                         // fill with 0s
                         fillBoolVector(
-                            exact_cover->data[indexInExactCoverMatrix(
-                                row, column, num)],
+                            exact_cover
+                                ->data[rowInExactCoverMatrix(row, column, num)],
                             false);
+                        // count++;
                     }
                 }
             }
         }
     }
+    // printf("Count is: ^%d^\n", count);
     return exact_cover;
 }
 

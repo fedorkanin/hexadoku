@@ -1,6 +1,8 @@
 #!/bin/bash
 
-PROG=./bin/main.out
+# PROG=./bin/main.out
+PROG="./$1"
+echo "Running tests for $PROG"
 TESTS_DIRS=("data/basic" "data/extra")
 
 # Function to clean up temporary files
