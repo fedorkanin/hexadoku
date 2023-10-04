@@ -1,52 +1,47 @@
 #include "MonkeyFistMesh.h"
 
-// create monkey fist mesh without using exact cover matrix
-Node* createMonkeyFistMesh(uint8_t** cell_matrix) {
-    DEBUG_PRINTF("In function createMonkeyFistMesh()\n");
+Node* createNodeFromData(int row_index, int col_index, Node** column_headers) {
+    Node* node              = initNode(row_index, col_index);
+    node->column_header     = column_headers[col_index];
+    node->up                = column_headers[col_index]->up;
+    node->down              = column_headers[col_index];
+    node->column_header->up = node;
+    node->column_header->nodeCount++;
+    return node;
+}
 
-    int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
-    // int mesh_height = SUDOKU_SIZE * SUDOKU_SIZE * SUDOKU_SIZE;
+void linkNodesHorizontally(Node* left_node, Node* right_node) {
+    left_node->right = right_node;
+    right_node->left = left_node;
+}
 
-    // create head node
-    Node*  head = initNode(-1, -1);
+void linkNodesVertically(Node* upper_node, Node* lower_node) {
+    upper_node->down = lower_node;
+    lower_node->up   = upper_node;
+}
 
-    // create column nodes
-    // create column headers array
+Node** createColumnHeaders(int mesh_width, Node* head) {
     Node** column_headers = (Node**)malloc(mesh_width * sizeof(Node*));
     for (int i = 0; i < mesh_width; i++) {
         Node* column_node = initNode(-1, i);
-        // link with left neighbor, link left neighbor with this node
-        column_node->left        = i ? column_headers[i - 1] : head;
-        column_node->left->right = column_node;
-        // set column pointer
+        linkNodesHorizontally(i ? column_headers[i - 1] : head, column_node);
         column_node->column_header = column_node;
-        // set node count
-        column_node->nodeCount = 0;
-
-        // set up and down pointers (try to delete later)
-        column_node->up   = column_node;
-        column_node->down = column_node;
-
-        // add to column headers array
+        column_node->nodeCount     = 0;
+        linkNodesVertically(column_node, column_node);
         column_headers[i] = column_node;
     }
-    // link last column node with head node, first one is already linked
-    column_headers[mesh_width - 1]->right = head;
-    head->left                            = column_headers[mesh_width - 1];
+    linkNodesHorizontally(column_headers[mesh_width - 1], head);
+    return column_headers;
+}
 
-    // create mesh nodes using pregenerated exact cover matrix
-    // create first node manually
-    // find first node allowed by clues
+void createNodesUsingPregenArray(uint8_t** cell_matrix, Node** column_headers) {
     int pregen_ind = 0;
-
     for (pregen_ind = 0; pregen_ind < COORDS_ARRAY_SIZE; pregen_ind++) {
         int hex_row_index =
             COORDS_ARRAY[pregen_ind][0] / (SUDOKU_SIZE * SUDOKU_SIZE);
         int hex_col_index =
             COORDS_ARRAY[pregen_ind][0] / SUDOKU_SIZE % SUDOKU_SIZE;
         int digit = COORDS_ARRAY[pregen_ind][0] % SUDOKU_SIZE + 1;
-        // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
-        //        hex_row_index, hex_col_index, digit);
 
         if (cell_matrix[hex_row_index][hex_col_index] == 0 ||
             cell_matrix[hex_row_index][hex_col_index] == digit)
@@ -68,63 +63,89 @@ Node* createMonkeyFistMesh(uint8_t** cell_matrix) {
     pregen_ind++;
 
     for (; pregen_ind < COORDS_ARRAY_SIZE; pregen_ind++) {
-        // check that this node is not forbidden by clues
-        // find corresponding hexadoku cell
         int hex_row_index =
             COORDS_ARRAY[pregen_ind][0] / (SUDOKU_SIZE * SUDOKU_SIZE);
         int hex_col_index =
             COORDS_ARRAY[pregen_ind][0] / SUDOKU_SIZE % SUDOKU_SIZE;
         int digit = COORDS_ARRAY[pregen_ind][0] % SUDOKU_SIZE + 1;
-        // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
-        //        hex_row_index, hex_col_index, digit);
 
         if (cell_matrix[hex_row_index][hex_col_index] != 0 &&
             cell_matrix[hex_row_index][hex_col_index] != digit)
             continue;
 
-        // create node
         int   row_index = COORDS_ARRAY[pregen_ind][0];
         int   col_index = COORDS_ARRAY[pregen_ind][1];
+        Node* node      = initNode(row_index, col_index);
 
-        Node* node = initNode(row_index, col_index);
-
-        // link node with left neighbor symmetrically
         if (prev_node->row_ID == row_index) {
             node->left       = prev_node;
             prev_node->right = node;
         } else {
-            // this node is first node in row
-            node->left  = node;
-            node->right = node;
-            // link last and first nodes in previous row
+            node->left              = node;
+            node->right             = node;
             prev_node->right        = first_node_in_row;
             first_node_in_row->left = prev_node;
-            // update first node in row
-            first_node_in_row = node;
+            first_node_in_row       = node;
         }
 
-        // link node with top neighbor symmetrically
         Node* last_node_in_column = column_headers[col_index]->up;
         node->up                  = last_node_in_column;
         last_node_in_column->down = node;
-        // update column header
-        node->column_header     = column_headers[col_index];
-        node->column_header->up = node;
-        node->down              = node->column_header;
-
-        // increment node count of column header
+        node->column_header       = column_headers[col_index];
+        node->column_header->up   = node;
+        node->down                = node->column_header;
         node->column_header->nodeCount++;
-
-        // update pervious row node
         prev_node = node;
     }
-    // link first and last nodes in last row
     prev_node->right        = first_node_in_row;
     first_node_in_row->left = prev_node;
+}
 
-    // free column headers array
+void createNodesUsingExactCover(uint8_t** cell_matrix, Node** column_headers) {
+    BoolVector2D* exact_cover = hexadokuToExactCover(cell_matrix);
+
+    Node*         prev_node         = NULL;
+    Node*         first_node_in_row = NULL;
+
+    for (int i = 0; i < exact_cover->capacity - 1; i++) {
+        for (int j = 0; j < exact_cover->data[i]->capacity; j++) {
+            if (exact_cover->data[i + 1]->data[j]) {
+                Node* node = createNodeFromData(i, j, column_headers);
+                if (prev_node && prev_node->row_ID == i) {
+                    linkNodesHorizontally(prev_node, node);
+                } else {
+                    linkNodesHorizontally(node, node);
+                    if (prev_node) {
+                        linkNodesHorizontally(prev_node, first_node_in_row);
+                    }
+                    first_node_in_row = node;
+                }
+                linkNodesVertically(node->up, node);
+                prev_node = node;
+            }
+        }
+    }
+
+    if (prev_node) {
+        linkNodesHorizontally(prev_node, first_node_in_row);
+    }
+    freeBoolVector2D(exact_cover);
+}
+
+Node* createMonkeyFistMesh(uint8_t** cell_matrix) {
+    DEBUG_PRINTF("In function createMonkeyFistMesh()\n");
+
+    int    mesh_width     = SUDOKU_SIZE * SUDOKU_SIZE * 4;
+    Node*  head           = initNode(-1, -1);
+    Node** column_headers = createColumnHeaders(mesh_width, head);
+
+#ifdef USE_PREGEN_ARRAY
+    createNodesUsingPregenArray(cell_matrix, column_headers);
+#else
+    createNodesUsingExactCover(cell_matrix, column_headers);
+#endif
+
     free(column_headers);
-
     return head;
 }
 
@@ -186,17 +207,14 @@ void freeMonkeyFistMesh(Node* head) {
         node = column_header->down;
         while (node != column_header) {
             Node* next_node = node->down;
-            // DEBUG_PRINTF("Freeing node r%d, c%d\n", node->row_ID,
-            //              node->column_ID);
             free(node);
             node = next_node;
         }
         Node* next_column_header = column_header->right;
-        // DEBUG_PRINTF("Freeing column header c%d\n",
-        // column_header->column_ID);
+
         free(column_header);
         column_header = next_column_header;
     }
-    // DEBUG_PRINTF("Freeing head\n");
+
     free(head);
 }

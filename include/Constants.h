@@ -4,6 +4,7 @@
 
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
+#define USE_PREGEN_ARRAY
 
 #ifdef DEBUG
 #define DEBUG_PRINTF(...)    \
