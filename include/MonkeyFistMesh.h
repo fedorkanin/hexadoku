@@ -4,9 +4,9 @@
 #include <stdio.h>
 
 #include "Constants.h"
-#include "Coords.h"
 #include "ExactCover.h"
 #include "Node.h"
+#include "Pregen.h"
 
 Node*  createMonkeyFistMesh(uint8_t** cell_matrix);
 void   printMonkeyFistMesh(Node* head);

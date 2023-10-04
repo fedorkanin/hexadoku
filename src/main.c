@@ -10,7 +10,6 @@
 
 #include "BoolVector.h"
 #include "BoolVector2D.h"
-#include "Coords.h"
 #include "ExactCover.h"
 #include "Hexadoku.h"
 #include "InputFunctions.h"
