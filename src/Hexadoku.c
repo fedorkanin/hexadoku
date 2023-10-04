@@ -1,6 +1,6 @@
 #include "Hexadoku.h"
 
-bool isHexadokuValid(Hexadoku* hex) {
+bool isHexadokuValid(Sudoku* hex) {
     // Check rows
     for (int i = 0; i < SUDOKU_SIZE; i++) {
         bool row[SUDOKU_SIZE] = {0};
@@ -45,7 +45,7 @@ bool isHexadokuValid(Hexadoku* hex) {
     return true;
 }
 
-void printHexadoku(Hexadoku* hex) {
+void printHexadoku(Sudoku* hex) {
     // Print first line
     for (size_t i = 0; i < LINE_WIDTH - 1; i++) {
         if (i % BOX_SIZE == 0) {
@@ -85,7 +85,7 @@ void printHexadoku(Hexadoku* hex) {
     }
 }
 
-void freeHexadoku(Hexadoku* hex) {
+void freeHexadoku(Sudoku* hex) {
     if (hex == NULL) {
         return;
     }
@@ -99,6 +99,6 @@ void freeHexadoku(Hexadoku* hex) {
     // Free the solution vector
     freeIntVector(hex->solution);
 
-    // Free the Hexadoku structure itself
+    // Free the Sudoku structure itself
     free(hex);
 }

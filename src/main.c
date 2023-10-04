@@ -20,18 +20,18 @@
 #include "Node.h"
 #include "Solver.h"
 
-void solutionToHexadoku(IntVector* solution, Hexadoku* hex) {
+void solutionToHexadoku(IntVector* solution, Sudoku* hex) {
     for (int i = 0; i < solution->size; i++) {
         int row    = sudokuRowFromExactCoverRow(solution->data[i]);
         int column = sudokuColumnFromExactCoverRow(solution->data[i]);
         int value  = sudokuValueFromExactCoverRow(solution->data[i]);
 
-        // Update the hexadoku within the Hexadoku struct
+        // Update the hexadoku within the Sudoku struct
         hex->cell_matrix[row][column] = value;
     }
 }
 
-void searchSolutions(Node* head, int k, Hexadoku* hex) {
+void searchSolutions(Node* head, int k, Sudoku* hex) {
     Node* row_node;
     Node* right_node;
     Node* left_node;
@@ -69,7 +69,7 @@ void searchSolutions(Node* head, int k, Hexadoku* hex) {
 int main(void) {
     printf("Zadejte hexadoku:\n");
 
-    Hexadoku* hex = readIn();
+    Sudoku* hex = readIn();
     if (hex == NULL) {
         printf("Nespravny vstup.\n");
         return 1;

@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-Hexadoku* readIn(void) {
-    Hexadoku* hex    = (Hexadoku*)malloc(sizeof(Hexadoku));
+Sudoku* readIn(void) {
+    Sudoku* hex    = (Sudoku*)malloc(sizeof(Sudoku));
     hex->cell_matrix = (uint8_t**)malloc(16 * sizeof(uint8_t*));
 
     // Read first line

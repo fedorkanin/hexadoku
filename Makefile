@@ -43,7 +43,7 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 test: compile
-	./$(TEST_SCRIPT)
+	./$(TEST_SCRIPT) $(TARGET)
 
 test-all: $(TARGET) $(TARGET_PREGEN)
 	./$(TEST_SCRIPT) $(TARGET) # Test with dynamically generated DLX

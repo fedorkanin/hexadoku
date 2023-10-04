@@ -13,8 +13,8 @@ typedef struct {
     uint8_t**  cell_matrix;
     IntVector* solution;
     int        solution_count;
-} Hexadoku;
+} Sudoku;
 
-bool isHexadokuValid(Hexadoku* hex);
-void printHexadoku(Hexadoku* hex);
-void freeHexadoku(Hexadoku* hex);
+bool isHexadokuValid(Sudoku* hex);
+void printHexadoku(Sudoku* hex);
+void freeHexadoku(Sudoku* hex);

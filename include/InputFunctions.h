@@ -6,7 +6,7 @@
 #include "Constants.h"
 #include "Hexadoku.h"
 
-Hexadoku* readIn(void);
+Sudoku* readIn(void);
 
 bool      isDelimiterStringValid(char* string, bool is_dashed);
 bool      isLetterValid(char a);
