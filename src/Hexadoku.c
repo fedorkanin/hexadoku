@@ -45,7 +45,7 @@ bool isHexadokuValid(Sudoku* hex) {
     return true;
 }
 
-void printHexadoku(Sudoku* hex) {
+void printSudoku(Sudoku* hex) {
     // Print first line
     for (size_t i = 0; i < LINE_WIDTH - 1; i++) {
         if (i % BOX_SIZE == 0) {
@@ -59,7 +59,7 @@ void printHexadoku(Sudoku* hex) {
         if (i % 2 == 0) {
             // Print line with letters
             for (size_t j = 0; j < LINE_WIDTH - 1; j++) {
-                if (j % 16 == 0) {
+                if (j % (BOX_SIZE * 4) == 0) {
                     printf("|");
                 } else if ((j - 2) % 4 == 0) {
                     // Letter position
@@ -72,7 +72,7 @@ void printHexadoku(Sudoku* hex) {
             printf("|\n");
         } else {
             // Print delimiter line
-            bool is_dashed = (i / 2 + 1) % 4 == 0 ? true : false;
+            bool is_dashed = (i / 2 + 1) % BOX_SIZE == 0 ? true : false;
             for (size_t j = 0; j < LINE_WIDTH; j++) {
                 if (j % 4 == 0) {
                     printf("+");
@@ -81,6 +81,14 @@ void printHexadoku(Sudoku* hex) {
                 }
             }
             printf("\n");
+        }
+    }
+}
+
+void printSudokuAsLine(Sudoku* hex) {
+    for (int i = 0; i < SUDOKU_SIZE; i++) {
+        for (int j = 0; j < SUDOKU_SIZE; j++) {
+            printf("%d", hex->cell_matrix[i][j]);
         }
     }
 }

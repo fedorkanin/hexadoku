@@ -16,5 +16,6 @@ typedef struct {
 } Sudoku;
 
 bool isHexadokuValid(Sudoku* hex);
-void printHexadoku(Sudoku* hex);
+void printSudoku(Sudoku* hex);
+void printSudokuAsLine(Sudoku* hex);
 void freeHexadoku(Sudoku* hex);

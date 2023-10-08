@@ -3,5 +3,6 @@
 *.o
 *.out
 .vscode
-.DS_Store
+*.DS_Store
 obj*
+out*

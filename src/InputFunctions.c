@@ -5,7 +5,7 @@
 #include <string.h>
 
 Sudoku* readIn(void) {
-    Sudoku* hex    = (Sudoku*)malloc(sizeof(Sudoku));
+    Sudoku* hex      = (Sudoku*)malloc(sizeof(Sudoku));
     hex->cell_matrix = (uint8_t**)malloc(16 * sizeof(uint8_t*));
 
     // Read first line
@@ -176,4 +176,18 @@ char* getString(void) {
     stripString(string);
 
     return string;
+}
+
+Sudoku* sudokuFromLine(char* line) {
+    // input is in format 1235000, 0 represent empty cell
+    Sudoku* sudoku      = (Sudoku*)malloc(sizeof(Sudoku));
+    sudoku->cell_matrix = (uint8_t**)malloc(SUDOKU_SIZE * sizeof(uint8_t*));
+    for (int i = 0; i < SUDOKU_SIZE; i++) {
+        sudoku->cell_matrix[i] =
+            (uint8_t*)malloc(SUDOKU_SIZE * sizeof(uint8_t));
+        for (int j = 0; j < SUDOKU_SIZE; j++) {
+            sudoku->cell_matrix[i][j] = line[i * SUDOKU_SIZE + j] - '0';
+        }
+    }
+    return sudoku;
 }

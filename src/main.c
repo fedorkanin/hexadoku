@@ -38,6 +38,9 @@ void searchSolutions(Node* head, int k, Sudoku* hex) {
 
     if (head->right == head) {
         if (hex->solution_count == 0) solutionToHexadoku(hex->solution, hex);
+#ifdef SEARCH_SINGLE_SOLUTION
+        return;
+#endif
         hex->solution_count++;
         return;
     }
@@ -65,7 +68,7 @@ void searchSolutions(Node* head, int k, Sudoku* hex) {
     uncover(column);
 }
 
-int main(void) {
+int progtestHexadoku(void) {
     printf("Zadejte hexadoku:\n");
 
     Sudoku* hex = readIn();
@@ -89,13 +92,42 @@ int main(void) {
     if (hex->solution_count == 0) {
         printf("Reseni neexistuje.\n");
     } else if (hex->solution_count == 1) {
-        printHexadoku(hex);
+        printSudoku(hex);
     } else {
         printf("Celkem reseni: %d\n", hex->solution_count);
     }
 
     freeHexadoku(hex);
     freeMonkeyFistMesh(head);
-
     return 0;
+}
+
+int solveBenchmarks(void) {
+    int puzzle_count;
+    scanf("%d ", &puzzle_count);
+    printf("%d\n", puzzle_count);
+    // get every sudoku puzzle with getString
+    for (int i = 0; i < puzzle_count; i++) {
+        char*   puzzle         = getString();
+        Sudoku* sudoku         = sudokuFromLine(puzzle);
+        sudoku->solution       = createIntVector(0);
+        sudoku->solution_count = 0;
+
+        Node* head = createMonkeyFistMesh(sudoku->cell_matrix);
+        printSudokuAsLine(sudoku);
+        putchar(',');
+        searchSolutions(head, 0, sudoku);
+        printSudokuAsLine(sudoku);
+        putchar('\n');
+
+        free(puzzle);
+        freeHexadoku(sudoku);
+        freeMonkeyFistMesh(head);
+    }
+    return 0;
+}
+
+int main(void) {
+    return solveBenchmarks();
+    // return progtestHexadoku();
 }

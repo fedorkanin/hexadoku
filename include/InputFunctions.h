@@ -6,11 +6,13 @@
 #include "Constants.h"
 #include "Hexadoku.h"
 
-Sudoku* readIn(void);
+Sudoku*  readIn(void);
 
-bool      isDelimiterStringValid(char* string, bool is_dashed);
-bool      isLetterValid(char a);
+bool     isDelimiterStringValid(char* string, bool is_dashed);
+bool     isLetterValid(char a);
 
-uint8_t*  strToUint8t(char* string);
-void      stripString(char* string);
-char*     getString(void);
+uint8_t* strToUint8t(char* string);
+void     stripString(char* string);
+char*    getString(void);
+
+Sudoku*  sudokuFromLine(char* line);

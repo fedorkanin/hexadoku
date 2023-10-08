@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -pedantic -Iinclude -O2 -std=c18 -MMD -MP
+CFLAGS = -Wall -pedantic -Iinclude -O3 -std=c18 -MMD -MP
 DEBUG_FLAGS = -g -DDEBUG
 PREGEN_FLAGS = -DUSE_PREGEN_ARRAY
 

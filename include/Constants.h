@@ -3,8 +3,9 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define SUDOKU_SIZE 16
-#define BOX_SIZE 4
+#define SUDOKU_SIZE 9
+#define BOX_SIZE 3
+#define SEARCH_SINGLE_SOLUTION
 
 #ifdef DEBUG
 #define DEBUG_PRINTF(...)    \
