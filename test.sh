@@ -17,7 +17,7 @@ run_tests() {
     if ! diff "$REF_FILE" test_out.txt ; then
       echo "Fail: $IN_FILE"
       echo "REF FILE: $REF_FILE"
-      clean_up
+    #   clean_up
       exit 1
     else
       echo "OK: $IN_FILE" | tr '\n' ' '

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -pedantic -Iinclude -O2 -std=c++17
+CFLAGS = -Wall -pedantic -Iinclude -O2 
 DEBUG_FLAGS = -g -DDEBUG
 
 SRC_DIR = src

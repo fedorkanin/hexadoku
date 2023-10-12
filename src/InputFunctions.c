@@ -65,6 +65,7 @@ uint8_t** readIn() {
         free(hexadoku);
         return NULL;
     }
+    free(line);
 
     return hexadoku;
 }
