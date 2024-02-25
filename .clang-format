@@ -9,3 +9,4 @@ DerivePointerAlignment: False
 AlignConsecutiveDeclarations: AcrossEmptyLinesAndComments
 AlignConsecutiveBitFields: true
 AlignConsecutiveAssignments: true
+InsertNewlineAtEOF: true
