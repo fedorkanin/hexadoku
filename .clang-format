@@ -1,0 +1,11 @@
+---
+BasedOnStyle: Google
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 80
+PointerAlignment: Left
+DerivePointerAlignment: False
+AlignConsecutiveDeclarations: AcrossEmptyLinesAndComments
+AlignConsecutiveBitFields: true
+AlignConsecutiveAssignments: true
