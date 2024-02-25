@@ -1,36 +1,57 @@
-CC = g++
-CFLAGS = -Wall -pedantic -Iinclude -O2 
-DEBUG_FLAGS = -g -DDEBUG
+CC = clang
+COMMON_FLAGS = -Wall -pedantic -Iinclude
+
+CFLAGS_DEV ?= $(COMMON_FLAGS) -fsanitize=address -g
+CFLAGS_RELEASE ?= $(COMMON_FLAGS) -O3
+LDFLAGS_DEV = -fsanitize=address
+LDFLAGS_RELEASE =
 
 SRC_DIR = src
-SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
 OBJ_DIR = obj
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC_FILES))
-
 BIN_DIR = bin
-TARGET = $(BIN_DIR)/main.out
-
 TEST_SCRIPT = test.sh
 
-.PHONY: all clean test compile debug
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES_DEV = $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/dev/%.o)
+OBJ_FILES_RELEASE = $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/release/%.o)
 
-all: compile
-compile: $(TARGET)
+DEP_FILES_DEV = $(OBJ_FILES_DEV:.o=.d)
+DEP_FILES_RELEASE = $(OBJ_FILES_RELEASE:.o=.d)
 
-$(TARGET): $(OBJ_FILES) | $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $^
+TARGET_DEV = $(BIN_DIR)/main_dev.out
+TARGET_RELEASE = $(BIN_DIR)/main_release.out
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c -o $@ $<
+.PHONY: all clean test dev release
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+all: dev
 
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+dev: CFLAGS = $(CFLAGS_DEV)
+dev: LDFLAGS = $(LDFLAGS_DEV)
+dev: $(TARGET_DEV)
 
-test: compile
+release: CFLAGS = $(CFLAGS_RELEASE)
+release: LDFLAGS = $(LDFLAGS_RELEASE)
+release: $(TARGET_RELEASE)
+
+-include $(DEP_FILES_DEV) $(DEP_FILES_RELEASE)
+
+$(TARGET_DEV): $(OBJ_FILES_DEV) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(TARGET_RELEASE): $(OBJ_FILES_RELEASE) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(OBJ_DIR)/dev/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/dev
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/dev $(OBJ_DIR)/release $(BIN_DIR):
+	mkdir -p $@
+
+test: dev
 	./$(TEST_SCRIPT)
 
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR) Hexadoku.dSYM
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
