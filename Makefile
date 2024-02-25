@@ -1,5 +1,5 @@
 CC = clang
-COMMON_FLAGS = -Wall -pedantic -Iinclude
+COMMON_FLAGS = -Wall -pedantic -Iinclude -std=c17
 
 CFLAGS_DEV ?= $(COMMON_FLAGS) -fsanitize=address -g
 CFLAGS_RELEASE ?= $(COMMON_FLAGS) -O3
