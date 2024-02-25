@@ -5,7 +5,7 @@
 #include <string.h>
 
 // read 16x16 hexadoku from stdin. Unset positions are represented by 0.
-uint8_t** readIn() {
+uint8_t** readIn(void) {
     uint8_t** hexadoku = (uint8_t**)malloc(16 * sizeof(char*));
     // read first line
     char*     line = getString();
@@ -157,7 +157,7 @@ void stripString(char* string) {
 
 // read string from stdin using getline, returns '\0' string in case
 // of failure
-char* getString() {
+char* getString(void) {
     char*  string = NULL;
     size_t size   = 0;
     if (getline(&string, &size, stdin) == -1) {
