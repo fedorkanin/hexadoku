@@ -1,38 +1,52 @@
 #!/bin/bash
 
-PROG=./bin/main.out
+PROGRAMS=("./bin/main_dev.out" "./bin/main_release.out")
 TESTS_DIRS=("data/basic" "data/extra")
 
-# Function to clean up temporary files
 clean_up() {
-  rm -f time.txt test_out.txt
+	rm -f time.txt test_out.txt
 }
 
-# Function to run tests for a given directory
 run_tests() {
-  local tests_dir=$1
-  for IN_FILE in "$tests_dir"/*_in.txt ; do
-    REF_FILE="${IN_FILE/_in.txt/_out.txt}"
-    { time $PROG < "$IN_FILE" > test_out.txt ; } 2> time.txt
-    if ! diff "$REF_FILE" test_out.txt ; then
-      echo "Fail: $IN_FILE"
-      echo "REF FILE: $REF_FILE"
-    #   clean_up
-      exit 1
-    else
-      echo "OK: $IN_FILE" | tr '\n' ' '
-      cat time.txt | tr '\n' ' ' | tr -s ' '
-      echo ""
-    fi
-  done
+	local program="$1"
+	local tests_dir="$2"
+	echo "Testing ${program} in directory ${tests_dir}"
+
+	for IN_FILE in "${tests_dir}"/*_in.txt; do
+		REF_FILE="${IN_FILE/_in.txt/_out.txt}"
+		{ time "${program}" <"${IN_FILE}" >test_out.txt; } 2>time.txt
+		if ! diff "${REF_FILE}" test_out.txt >/dev/null; then
+			echo "Test FAILED: ${IN_FILE}"
+			echo "Reference file: ${REF_FILE}"
+			diff -u "${REF_FILE}" test_out.txt || true
+			clean_up
+			exit 1
+		else
+			echo -n "Test PASSED: ${IN_FILE}"
+			tr '\n' ' ' <time.txt | sed 's/ $//' || true
+		fi
+
+		echo ''
+	done
 }
 
-# Run tests for each directory
-for tests_dir in "${TESTS_DIRS[@]}"; do
-  run_tests "$tests_dir"
-  echo ''
+programs_to_test=()
+for prog in "${PROGRAMS[@]}"; do
+	if [[ -f ${prog} ]]; then
+		programs_to_test+=("${prog}")
+	fi
+done
+
+if [[ ${#programs_to_test[@]} -eq 0 ]]; then
+	echo "Error: No executable found to test. Please compile first."
+	exit 1
+fi
+
+for prog in "${programs_to_test[@]}"; do
+	for tests_dir in "${TESTS_DIRS[@]}"; do
+		run_tests "${prog}" "${tests_dir}"
+		echo ''
+	done
 done
 
 clean_up
-
-echo ''
