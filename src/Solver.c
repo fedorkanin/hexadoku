@@ -23,6 +23,8 @@ void cover(Node* column_header) {
 }
 
 // Uncover constraint, i.e. make it available again
+//
+// similar to cover, but in reverse
 void uncover(Node* column_header) {
     for (Node* v_node = column_header->up; v_node != column_header;
          v_node       = v_node->up) {
@@ -68,26 +70,4 @@ inline void unlinkVertical(Node* node) {
 inline void relinkVertical(Node* node) {
     node->up->down = node;
     node->down->up = node;
-}
-
-bool compareNodeCount(Node* first, Node* second) {
-    return first->nodeCount < second->nodeCount;
-}
-
-// Sort column headers by node count
-void sortColumnHeaders(Node* head) {
-    // de-cycle column headers
-    head->left->right = NULL;
-
-    head->right       = mergeSort(head->right, compareNodeCount);
-    head->right->left = head;
-
-    // find last column header
-    Node* last_column_header = head->right;
-    while (last_column_header->right)
-        last_column_header = last_column_header->right;
-
-    // re-cycle column headers
-    head->left                = last_column_header;
-    last_column_header->right = head;
 }

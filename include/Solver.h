@@ -2,7 +2,6 @@
 
 #include <stdbool.h>
 
-#include "MergeSort.h"
 #include "Node.h"
 
 bool  compareNodeCount(Node* first, Node* second);

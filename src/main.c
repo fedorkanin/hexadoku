@@ -15,7 +15,6 @@
 #include "Hexadoku.h"
 #include "InputFunctions.h"
 #include "IntVector.h"
-#include "MergeSort.h"
 #include "MonkeyFistMesh.h"
 #include "Node.h"
 #include "Solver.h"
@@ -83,7 +82,6 @@ int main(void) {
     }
     if (!isHexadokuValid(hexadoku)) {
         printf("Nespravny vstup.\n");
-        // free memory
         for (int i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
         free(hexadoku);
         return 1;
