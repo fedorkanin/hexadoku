@@ -1,9 +1,10 @@
 CC = clang
 COMMON_FLAGS = -Wall -pedantic -Iinclude -std=c17
 
-CFLAGS_DEV ?= $(COMMON_FLAGS) -fsanitize=address -g
+# Add profiling and coverage flags for the development build
+CFLAGS_DEV ?= $(COMMON_FLAGS) -fsanitize=address -g -fprofile-instr-generate -fcoverage-mapping
 CFLAGS_RELEASE ?= $(COMMON_FLAGS) -O3
-LDFLAGS_DEV = -fsanitize=address
+LDFLAGS_DEV = -fsanitize=address -fprofile-instr-generate -fcoverage-mapping
 LDFLAGS_RELEASE =
 
 SRC_DIR = src
@@ -21,7 +22,7 @@ DEP_FILES_RELEASE = $(OBJ_FILES_RELEASE:.o=.d)
 TARGET_DEV = $(BIN_DIR)/main_dev.out
 TARGET_RELEASE = $(BIN_DIR)/main_release.out
 
-.PHONY: all clean test dev release
+.PHONY: all clean test dev release profile
 
 all: dev
 
@@ -53,5 +54,9 @@ $(OBJ_DIR)/dev $(OBJ_DIR)/release $(BIN_DIR):
 test: dev
 	./$(TEST_SCRIPT)
 
+profile: dev
+	llvm-profdata merge -sparse default.profraw -o default.profdata
+	llvm-cov show ./$(TARGET_DEV) -instr-profile=default.profdata
+
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR) default.profraw default.profdata
