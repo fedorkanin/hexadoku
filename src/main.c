@@ -25,7 +25,6 @@ int        solution_count_global = 0;
 IntVector* solution_global;
 
 void       solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
-    // DEBUG_PRINTF("In solutionToHexadoku\n");
     for (int i = 0; i < solution->size; i++) {
         int row    = rowFromExactCoverIndex(solution->data[i]);
         int column = columnFromExactCoverIndex(solution->data[i]);
@@ -34,25 +33,24 @@ void       solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
     }
 }
 
-// print all solutions of monkey fist mesh
 void searchSolutions(Node* head, int k) {
     Node* row_node;
     Node* right_node;
     Node* left_node;
     Node* column;
 
-    // if there are no more columns, we found a solution
+    // If there are no more columns, we have found a solution.
     if (head->right == head) {
-        // convert solution to hexadoku
         if (solution_count_global == 0)
             solutionToHexadoku(solution_global, hexadoku_global);
         solution_count_global++;
         return;
     }
-    // cover column with minimum node count
+
+    // sortColumnHeaders(head);
     column = getMinColumn(head);
     cover(column);
-    // iterate over column
+
     for (row_node = column->down; row_node != column;
          row_node = row_node->down) {
         if (solution_count_global == 0)
@@ -61,15 +59,17 @@ void searchSolutions(Node* head, int k) {
         for (right_node = row_node->right; right_node != row_node;
              right_node = right_node->right)
             cover(right_node->column_header);
-        // search for solutions
+
         searchSolutions(head, k + 1);
+
         // if solution is not possible, backtrack and uncover column
         if (solution_count_global == 0) popFromIntVector(solution_global);
-        // column = row_node->column_header;
+
         for (left_node = row_node->left; left_node != row_node;
              left_node = left_node->left)
             uncover(left_node->column_header);
     }
+
     uncover(column);
     return;
 }

@@ -15,12 +15,10 @@ Node* getMiddle(Node* head) {
     return slow;
 }
 
-// merge two sorted linked lists with custom comparator
 Node* merge(Node* first, Node* second, bool (*comparator)(Node*, Node*)) {
     if (!first) return second;
     if (!second) return first;
 
-    // pick the smaller value
     if (comparator(first, second)) {
         first->right       = merge(first->right, second, comparator);
         first->right->left = first;
@@ -34,7 +32,6 @@ Node* merge(Node* first, Node* second, bool (*comparator)(Node*, Node*)) {
     }
 }
 
-// merge sort linked list with custom comparator
 Node* mergeSort(Node* head, bool (*comparator)(Node*, Node*)) {
     if (!head || !head->right) return head;
 
