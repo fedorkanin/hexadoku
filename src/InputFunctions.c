@@ -1,12 +1,13 @@
 #include "InputFunctions.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// read 16x16 hexadoku from stdin. Unset positions are represented by 0.
-uint8_t** readIn(void) {
+uint8_t** readProgtest(void) {
     uint8_t** hexadoku = (uint8_t**)malloc(16 * sizeof(char*));
+
     // read first line
     char*     line = getString();
     if (!isDelimiterStringValid(line, false)) {
@@ -107,12 +108,11 @@ bool isDelimiterStringValid(char* string, bool is_dashed) {
 }
 
 bool isLetterValid(char a) {
-    if (a >= 'a' && a <= 'p') return true;
+    if ((a >= 'a') && (a <= 'a' + SUDOKU_SIZE - 1)) return true;
     if (a == ' ') return true;
     return false;
 }
 
-// convert string to array of uint8_t (0-16)
 uint8_t* strToUint8t(char* string) {
     if (strlen(string) != LINE_WIDTH) {
         DEBUG_PRINTF("Invalid line width.\n");
@@ -146,17 +146,14 @@ uint8_t* strToUint8t(char* string) {
     return array;
 }
 
-// remove all spaces from string end
 void stripString(char* string) {
     int len = strlen(string);
-    while (len > 0 && string[len - 1] == ' ') {
+    while (len > 0 && isspace(string[len - 1])) {
         string[len - 1] = '\0';
         len--;
     }
 }
 
-// read string from stdin using getline, returns '\0' string in case
-// of failure
 char* getString(void) {
     char*  string = NULL;
     size_t size   = 0;
@@ -165,7 +162,7 @@ char* getString(void) {
         string    = (char*)malloc(sizeof(char));
         string[0] = '\0';
     }
-    // remove trailing newline
+
     int len = strlen(string);
     if (len > 0 && string[len - 1] == '\n') string[len - 1] = '\0';
     stripString(string);

@@ -8,7 +8,11 @@
 #include "Coords.h"
 #include "Node.h"
 
-Node* createMonkeyFistMesh3(uint8_t** hexadoku);
-void  printMonkeyFistMesh(Node* head);
-void  validateMonkeyFistMesh(Node* head);
-void  freeMonkeyFistMesh(Node* head);
+/// @brief Create a DLX mesh from pre-generated coord array, then fill it with
+/// hints from the given hexadoku.
+/// @param hexadoku A pointer to a SUDOKU_SIZE x SUDOKU_SIZE array.
+/// @return A pointer to the head of the DLX mesh.
+Node* createDLXMesh(uint8_t** hexadoku);
+void  printDLXMesh(Node* head);
+void  validateDLXMesh(Node* head);
+void  freeDLXMesh(Node* head);

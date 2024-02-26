@@ -27,7 +27,7 @@ void       solutionToHexadoku(IntVector* solution, uint8_t** hexadoku) {
     for (int i = 0; i < solution->size; i++) {
         int row    = rowFromExactCoverIndex(solution->data[i]);
         int column = columnFromExactCoverIndex(solution->data[i]);
-        int value  = valueFromExactCoverIndex(solution->data[i]);
+        int value  = numFromExactCoverIndex(solution->data[i]);
         hexadoku[row][column] = value;
     }
 }
@@ -75,7 +75,7 @@ void searchSolutions(Node* head, int k) {
 
 int main(void) {
     printf("Zadejte hexadoku:\n");
-    uint8_t** hexadoku = readIn();
+    uint8_t** hexadoku = readProgtest();
     if (hexadoku == NULL) {
         printf("Nespravny vstup.\n");
         return 1;
@@ -89,7 +89,7 @@ int main(void) {
 
     hexadoku_global = hexadoku;
 
-    Node*      head = createMonkeyFistMesh3(hexadoku);
+    Node*      head = createDLXMesh(hexadoku);
     // sortColumnHeaders(head);
 
     IntVector* solution = createIntVector(0);
@@ -107,7 +107,7 @@ int main(void) {
     // free memory
     for (int i = 0; i < SUDOKU_SIZE; i++) free(hexadoku[i]);
     free(hexadoku);
-    freeMonkeyFistMesh(head);
+    freeDLXMesh(head);
     freeIntVector(solution);
 
     return 0;

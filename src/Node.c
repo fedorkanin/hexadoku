@@ -2,11 +2,6 @@
 
 Node* initNode(int rowID, int columnID) {
     Node* node = (Node*)malloc(sizeof(Node));
-    if (node == NULL) {
-        // Handle memory allocation error here, e.g., return NULL or exit the
-        // program.
-        return NULL;
-    }
 
     node->left          = node;
     node->right         = node;

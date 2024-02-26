@@ -6,6 +6,12 @@
 #define SUDOKU_SIZE 16
 #define BOX_SIZE 4
 
+// 1. Each cell must contain a number.
+// 2. Each row must contain each number exactly once.
+// 3. Each column must contain each number exactly once.
+// 4. Each box must contain each number exactly once.
+#define CONSTRAINTS 4
+
 #ifdef DEBUG
 #define DEBUG_PRINTF(...)    \
     do {                     \

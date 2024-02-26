@@ -1,16 +1,13 @@
 #include "MonkeyFistMesh.h"
 
-// create monkey fist mesh without using exact cover matrix
-Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
-    DEBUG_PRINTF("In function createMonkeyFistMesh3()\n");
+Node* createDLXMesh(uint8_t** hexadoku) {
+    DEBUG_PRINTF("In function createDLXMesh()\n");
 
-    int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * 4;
-    // int mesh_height = SUDOKU_SIZE * SUDOKU_SIZE * SUDOKU_SIZE;
+    int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * CONSTRAINTS;
 
     // create head node
     Node*  head = initNode(-1, -1);
 
-    // create column nodes
     // create column headers array
     Node** column_headers = (Node**)malloc(mesh_width * sizeof(Node*));
     for (int i = 0; i < mesh_width; i++) {
@@ -129,7 +126,7 @@ Node* createMonkeyFistMesh3(uint8_t** hexadoku) {
 }
 
 // print monkey fist mesh
-void printMonkeyFistMesh(Node* head) {
+void printDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
     while (column_header != head) {
@@ -147,7 +144,7 @@ void printMonkeyFistMesh(Node* head) {
 }
 
 // check if all nodes have non-null pointers
-void validateMonkeyFistMesh(Node* head) {
+void validateDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
     while (column_header != head) {
@@ -179,7 +176,7 @@ void validateMonkeyFistMesh(Node* head) {
 }
 
 // free monkey fist mesh
-void freeMonkeyFistMesh(Node* head) {
+void freeDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
     while (column_header != head) {

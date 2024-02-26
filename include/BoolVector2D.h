@@ -11,5 +11,4 @@ typedef struct BoolVector2D {
 BoolVector2D* createBoolVector2D(int capacity);
 void          pushToBoolVector2D(BoolVector2D* v, BoolVector* value);
 void          printBoolVector2D(BoolVector2D* v);
-BoolVector2D* boolArrayToVector2D(bool array[][4], int height, int width);
 void          freeBoolVector2D(BoolVector2D* v);

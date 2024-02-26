@@ -5,26 +5,30 @@ int indexInExactCoverMatrix(int row, int column, int num) {
     return row * SUDOKU_SIZE * SUDOKU_SIZE + column * SUDOKU_SIZE + num + 1;
 }
 
-int valueFromExactCoverIndex(int index) { return index % SUDOKU_SIZE + 1; }
+int numFromExactCoverIndex(int index) { return index % SUDOKU_SIZE + 1; }
 
 int columnFromExactCoverIndex(int index) {
     return (index / SUDOKU_SIZE) % SUDOKU_SIZE;
 }
 
 int rowFromExactCoverIndex(int index) {
-    return (index / SUDOKU_SIZE / SUDOKU_SIZE);
+    return index / (SUDOKU_SIZE * SUDOKU_SIZE);
 }
 
+// Iterate through cells, update header for each cell (row and column).
 int createCellConstraints(BoolVector2D* exact_cover, int header) {
-    for (int row = 0; row < SUDOKU_SIZE; row++)
-        for (int column = 0; column < SUDOKU_SIZE; column++, header++)
+    for (int row = 0; row < SUDOKU_SIZE; row++) {
+        for (int column = 0; column < SUDOKU_SIZE; column++, header++) {
             for (int num = 0; num < SUDOKU_SIZE; num++) {
                 exact_cover->data[indexInExactCoverMatrix(row, column, num)]
                     ->data[header] = true;
             }
+        }
+    }
     return header;
 }
 
+// Iterate through rows, update header for a unique number in each row.
 int createRowConstraints(BoolVector2D* exact_cover, int header) {
     for (int row = 0; row < SUDOKU_SIZE; row++)
         for (int num = 0; num < SUDOKU_SIZE; num++, header++)
@@ -35,6 +39,7 @@ int createRowConstraints(BoolVector2D* exact_cover, int header) {
     return header;
 }
 
+// Iterate through columns, update header for a unique number in each column.
 int createColumnConstraints(BoolVector2D* exact_cover, int header) {
     for (int column = 0; column < SUDOKU_SIZE; column++)
         for (int num = 0; num < SUDOKU_SIZE; num++, header++)
@@ -45,19 +50,26 @@ int createColumnConstraints(BoolVector2D* exact_cover, int header) {
     return header;
 }
 
+// Iterate through top left corner of each box, update header for a unique
+// number in each box.
 int createBoxConstraints(BoolVector2D* exact_cover, int header) {
     for (int row = 0; row < SUDOKU_SIZE; row += BOX_SIZE)
         for (int column = 0; column < SUDOKU_SIZE; column += BOX_SIZE)
             for (int num = 0; num < SUDOKU_SIZE; num++, header++)
-                for (int box_row = 0; box_row < BOX_SIZE; box_row++)
-                    for (int box_column = 0; box_column < BOX_SIZE;
-                         box_column++) {
-                        int index = indexInExactCoverMatrix(
-                            row + box_row, column + box_column, num);
-                        exact_cover->data[index]->data[header] = true;
-                    }
+                markBoxConstraint(exact_cover, row, column, num, header);
 
     return header;
+}
+
+// We can place a number anywhere in the box, so mark each box cell.
+void markBoxConstraint(BoolVector2D* exact_cover, int startRow, int startColumn,
+                       int num, int header) {
+    for (int box_row = 0; box_row < BOX_SIZE; box_row++)
+        for (int box_column = 0; box_column < BOX_SIZE; box_column++) {
+            int index = indexInExactCoverMatrix(startRow + box_row,
+                                                startColumn + box_column, num);
+            exact_cover->data[index]->data[header] = true;
+        }
 }
 
 BoolVector2D* hexadokuToExactCover(uint8_t** hexadoku) {
