@@ -14,4 +14,9 @@ typedef struct node {
     int          nodeCount;
 } Node;
 
+/// @brief Initializes a node with neighbor pointers pointing to itself, column
+/// header set to NULL, and nodeCount set to 0.
+/// @param rowID Row index of the node.
+/// @param columnID Column index of the node.
+/// @return A pointer to the newly created node.
 Node* initNode(int rowID, int columnID);

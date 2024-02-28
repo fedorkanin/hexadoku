@@ -3,20 +3,19 @@
 Node* createDLXMesh(uint8_t** hexadoku) {
     DEBUG_PRINTF("In function createDLXMesh()\n");
 
-    int    mesh_width = SUDOKU_SIZE * SUDOKU_SIZE * CONSTRAINTS;
+    Node*  head           = initNode(-1, -1);
+    Node** column_headers = (Node**)malloc(MESH_WIDTH * sizeof(Node*));
 
-    // create head node
-    Node*  head = initNode(-1, -1);
-
-    // create column headers array
-    Node** column_headers = (Node**)malloc(mesh_width * sizeof(Node*));
-    for (int i = 0; i < mesh_width; i++) {
+    for (int i = 0; i < MESH_WIDTH; i++) {
         Node* column_node = initNode(-1, i);
+
         // link with left neighbor, link left neighbor with this node
         column_node->left        = i ? column_headers[i - 1] : head;
         column_node->left->right = column_node;
+
         // set column pointer
         column_node->column_header = column_node;
+
         // set node count
         column_node->nodeCount = 0;
 
@@ -27,9 +26,10 @@ Node* createDLXMesh(uint8_t** hexadoku) {
         // add to column headers array
         column_headers[i] = column_node;
     }
+
     // link last column node with head node, first one is already linked
-    column_headers[mesh_width - 1]->right = head;
-    head->left                            = column_headers[mesh_width - 1];
+    column_headers[MESH_WIDTH - 1]->right = head;
+    head->left                            = column_headers[MESH_WIDTH - 1];
 
     // create mesh nodes using pregenerated exact cover matrix
     // create first node manually
@@ -42,8 +42,6 @@ Node* createDLXMesh(uint8_t** hexadoku) {
         int hex_col_index =
             COORDS_ARRAY[pregen_ind][0] / SUDOKU_SIZE % SUDOKU_SIZE;
         int digit = COORDS_ARRAY[pregen_ind][0] % SUDOKU_SIZE + 1;
-        // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
-        //        hex_row_index, hex_col_index, digit);
 
         if (hexadoku[hex_row_index][hex_col_index] == 0 ||
             hexadoku[hex_row_index][hex_col_index] == digit)
@@ -72,8 +70,6 @@ Node* createDLXMesh(uint8_t** hexadoku) {
         int hex_col_index =
             COORDS_ARRAY[pregen_ind][0] / SUDOKU_SIZE % SUDOKU_SIZE;
         int digit = COORDS_ARRAY[pregen_ind][0] % SUDOKU_SIZE + 1;
-        // printf("hex_row_index = %d, hex_col_index = %d, digit = %d\n",
-        //        hex_row_index, hex_col_index, digit);
 
         if (hexadoku[hex_row_index][hex_col_index] != 0 &&
             hexadoku[hex_row_index][hex_col_index] != digit)
@@ -104,6 +100,7 @@ Node* createDLXMesh(uint8_t** hexadoku) {
         Node* last_node_in_column = column_headers[col_index]->up;
         node->up                  = last_node_in_column;
         last_node_in_column->down = node;
+
         // update column header
         node->column_header     = column_headers[col_index];
         node->column_header->up = node;
@@ -115,6 +112,7 @@ Node* createDLXMesh(uint8_t** hexadoku) {
         // update pervious row node
         prev_node = node;
     }
+
     // link first and last nodes in last row
     prev_node->right        = first_node_in_row;
     first_node_in_row->left = prev_node;
@@ -125,7 +123,6 @@ Node* createDLXMesh(uint8_t** hexadoku) {
     return head;
 }
 
-// print monkey fist mesh
 void printDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
@@ -143,7 +140,6 @@ void printDLXMesh(Node* head) {
     }
 }
 
-// check if all nodes have non-null pointers
 void validateDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
@@ -151,8 +147,9 @@ void validateDLXMesh(Node* head) {
         if (column_header->nodeCount == 0) {
             printf("Column %d has no nodes\n", column_header->column_ID);
         }
-        node = column_header->down;
-        while (node != column_header) {
+
+        for (node = column_header->down; node != column_header;
+             node = node->down) {
             if (node->left == NULL)
                 printf("Node r%d, c%d has NULL left pointer\n", node->row_ID,
                        node->column_ID);
@@ -168,14 +165,13 @@ void validateDLXMesh(Node* head) {
             if (node->column_header == NULL)
                 printf("Node r%d, c%d has NULL column header pointer \n",
                        node->row_ID, node->column_ID);
-            node = node->down;
         }
         column_header = column_header->right;
     }
+
     printf("Validation complete\n");
 }
 
-// free monkey fist mesh
 void freeDLXMesh(Node* head) {
     Node* column_header = head->right;
     Node* node;
@@ -183,17 +179,17 @@ void freeDLXMesh(Node* head) {
         node = column_header->down;
         while (node != column_header) {
             Node* next_node = node->down;
-            // DEBUG_PRINTF("Freeing node r%d, c%d\n", node->row_ID,
-            //              node->column_ID);
+            DEBUG_PRINTF("Freeing node r%d, c%d\n", node->row_ID,
+                         node->column_ID);
             free(node);
             node = next_node;
         }
+
         Node* next_column_header = column_header->right;
-        // DEBUG_PRINTF("Freeing column header c%d\n",
-        // column_header->column_ID);
+        DEBUG_PRINTF("Freeing column header c%d\n", column_header->column_ID);
         free(column_header);
         column_header = next_column_header;
     }
-    // DEBUG_PRINTF("Freeing head\n");
+    DEBUG_PRINTF("Freeing head\n");
     free(head);
 }

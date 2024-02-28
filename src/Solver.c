@@ -3,12 +3,6 @@
 // main solve function and helper functions inspired by
 // https://www.geeksforgeeks.org/implementation-of-exact-cover-problem-and-algorithm-x-using-dlx/
 
-// Mark constraint as covered
-//
-// cover iterates over all rows that can no longer be used, because they contain
-// a node in the already satisfied column. It detaches all the nodes in such
-// rows from their vertical neighbors and decrements the node count of their
-// respective column header.
 void cover(Node* column_header) {
     unlinkHorizontal(column_header);
 
@@ -22,9 +16,6 @@ void cover(Node* column_header) {
     }
 }
 
-// Uncover constraint, i.e. make it available again
-//
-// similar to cover, but in reverse
 void uncover(Node* column_header) {
     for (Node* v_node = column_header->up; v_node != column_header;
          v_node       = v_node->up) {
@@ -38,7 +29,6 @@ void uncover(Node* column_header) {
     relinkHorizontal(column_header);
 }
 
-// Get the column with minimum node count.
 Node* getMinColumn(Node* head) {
     Node* min_column    = head->right;
     Node* column_header = head->right->right;

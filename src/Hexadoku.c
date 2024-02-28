@@ -1,18 +1,6 @@
 #include "Hexadoku.h"
 
-/**
- * @brief Prints the given 16x16 hexadoku puzzle to the standard output.
- *
- * This function formats and prints the hexadoku puzzle with a visual
- * representation that includes borders around each 4x4 block. Empty cells are
- * represented by spaces. Non-empty cells are represented by hexadecimal
- * characters (1-9, A-F) corresponding to their value. The function is designed
- * to visually separate each 4x4 block with lines and includes a border around
- * the entire puzzle.
- *
- * @param hexadoku A pointer to a 16x16 array representing the hexadoku puzzle
- * to be printed.
- */
+
 bool isHexadokuValid(uint8_t** hexadoku) {
     // check rows
     for (int i = 0; i < SUDOKU_SIZE; i++) {

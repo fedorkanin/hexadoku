@@ -90,7 +90,6 @@ int main(void) {
     hexadoku_global = hexadoku;
 
     Node*      head = createDLXMesh(hexadoku);
-    // sortColumnHeaders(head);
 
     IntVector* solution = createIntVector(0);
     solution_global     = solution;

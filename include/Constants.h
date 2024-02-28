@@ -11,6 +11,7 @@
 // 3. Each column must contain each number exactly once.
 // 4. Each box must contain each number exactly once.
 #define CONSTRAINTS 4
+#define MESH_WIDTH (SUDOKU_SIZE * SUDOKU_SIZE * CONSTRAINTS)
 
 #ifdef DEBUG
 #define DEBUG_PRINTF(...)    \
